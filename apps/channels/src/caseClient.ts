@@ -1,11 +1,10 @@
-import { createMockCaseActions, type CaseActions } from "@trustline/shared/fixtures";
+import { dispatchQuestionnaire as brainDispatch } from "@trustline/db";
 import { config } from "./config.js";
 
-// The spine: Channels calls CaseActions on the Brain — it never mutates case
-// state directly. Until Brain exposes its HTTP API, fall back to the in-memory
-// mock so #4 is demoable end-to-end. Set BRAIN_URL to switch to the real agent.
-
-const mock = createMockCaseActions();
+// The spine: Channels advances cases through the Brain's case actions, never by
+// ad-hoc state writes. The Brain logic lives in @trustline/db (shared), so we
+// call it in-process — same as the voice bridge uses recordAnswers/transcript.
+// Set BRAIN_URL to route through a remote Brain HTTP API instead.
 
 async function brainPost(path: string, body: unknown) {
   const res = await fetch(`${config.brainUrl}${path}`, {
@@ -17,9 +16,11 @@ async function brainPost(path: string, body: unknown) {
   return res.json();
 }
 
-export const caseActions: Pick<CaseActions, "dispatchQuestionnaire"> = {
-  async dispatchQuestionnaire(caseId: string) {
-    if (config.brainUrl) return brainPost(`/cases/${caseId}/dispatch`, {});
-    return mock.dispatchQuestionnaire(caseId);
+export const caseActions = {
+  async dispatchQuestionnaire(caseId: string): Promise<{ status: string }> {
+    if (config.brainUrl) {
+      return brainPost(`/api/cases/${caseId}/actions/dispatch-questionnaire`, {});
+    }
+    return brainDispatch(caseId);
   },
 };
