@@ -24,7 +24,6 @@ export default function QuestionnairePage() {
 
   useEffect(() => {
     if (!caseId) return;
-    // Fetch case to get risk tier, then load questionnaire schema
     fetch(`/api/cases/${caseId}`)
       .then((r) => { if (!r.ok) throw new Error("case fetch failed"); return r.json(); })
       .then((data) => {
@@ -36,9 +35,9 @@ export default function QuestionnairePage() {
       .catch(() => setError("Failed to load questionnaire. Please try again."));
   }, [caseId]);
 
-  if (error) return <Screen icon="⚠️" title="Error" body={error} />;
-  if (!payload) return <Screen icon="⏳" title="Loading…" body="Preparing your questionnaire." />;
-  if (done) return <Screen icon="✓" title="All done!" body="Your answers have been submitted. You will receive confirmation shortly." />;
+  if (error) return <Screen title="Something went wrong" body={error} />;
+  if (!payload) return <Screen title="Loading your questionnaire…" body="This will only take a moment." loading />;
+  if (done) return <Screen title="All done." body="Your answers have been submitted. You will hear from us shortly." success />;
 
   const questions = payload.questions;
   const q = questions[step];
@@ -77,58 +76,80 @@ export default function QuestionnairePage() {
     }
   };
 
+  const pct = Math.round(((step + 1) / questions.length) * 100);
+
   return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-      <div style={{ width: "100%", maxWidth: 520, padding: "0 24px" }}>
-        {/* Progress bar */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "var(--muted)" }}>
-            <span>Question {step + 1} of {questions.length}</span>
-            <span>{payload.riskTier} risk · {payload.id} v{payload.version}</span>
-          </div>
-          <div style={{ background: "var(--border)", borderRadius: 4, height: 4, overflow: "hidden" }}>
-            <div style={{ background: "#1d76db", width: `${((step + 1) / questions.length) * 100}%`, height: "100%", transition: "width 0.3s" }} />
-          </div>
-        </div>
+    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 32px", borderBottom: "1px solid var(--border)", background: "var(--panel)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", color: "var(--brand)" }}>TRUSTLINE</span>
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>Question {step + 1} of {questions.length}</span>
+      </div>
 
-        <div className="card" style={{ padding: 36 }}>
-          {/* EDD badge */}
-          {q.tier === "HIGH" && (
-            <div style={{ background: "#d93f0b22", color: "#d93f0b", border: "1px solid #d93f0b44", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, display: "inline-block", marginBottom: 12 }}>
-              ENHANCED DUE DILIGENCE
+      {/* Progress */}
+      <div style={{ height: 3, background: "var(--border-light)" }}>
+        <div style={{ height: "100%", background: "var(--brand)", width: `${pct}%`, transition: "width 0.3s ease" }} />
+      </div>
+
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+        <div style={{ width: "100%", maxWidth: 520 }}>
+          {/* Risk tier badge */}
+          {q.tier && q.tier !== "LOW" && (
+            <div style={{ marginBottom: 16 }}>
+              {q.tier === "HIGH" ? (
+                <span style={{ background: "var(--error-bg)", color: "var(--error)", border: "1px solid var(--error-border)", borderRadius: 4, padding: "3px 10px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em" }}>
+                  ENHANCED DUE DILIGENCE
+                </span>
+              ) : (
+                <span style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--warning-border)", borderRadius: 4, padding: "3px 10px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em" }}>
+                  ADDITIONAL CHECK
+                </span>
+              )}
             </div>
           )}
-          {q.tier === "MEDIUM" && (
-            <div style={{ background: "#e3a00822", color: "#e3a008", border: "1px solid #e3a00844", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, display: "inline-block", marginBottom: 12 }}>
-              ADDITIONAL CHECK
-            </div>
-          )}
 
-          <h2 style={{ margin: "0 0 24px", fontSize: 18, fontWeight: 700, lineHeight: 1.4 }}>{q.label}</h2>
+          {/* Question */}
+          <h2 style={{ fontSize: "1.25rem", marginBottom: 24, lineHeight: 1.4 }}>{q.label}</h2>
 
           <QuestionInput q={q} value={answers[q.field]} onChange={setAnswer} />
 
-          {error && <div style={{ color: "#d93f0b", fontSize: 13, marginTop: 12 }}>{error}</div>}
+          {error && (
+            <div style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 6, padding: "9px 12px", fontSize: 13, color: "var(--error)", marginTop: 16 }}>
+              {error}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
             {step > 0 && (
-              <button onClick={() => { setError(null); setStep((s) => s - 1); }} style={btnStyle("secondary")}>
+              <button
+                onClick={() => { setError(null); setStep((s) => s - 1); }}
+                style={{
+                  padding: "11px 20px", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  background: "var(--panel)", color: "var(--text)", border: "1px solid var(--border)",
+                }}
+              >
                 ← Back
               </button>
             )}
             <button
               onClick={next}
               disabled={submitting || (q.required && !answered)}
-              style={{ ...btnStyle("primary"), flex: 1, opacity: (submitting || (q.required && !answered)) ? 0.6 : 1 }}
+              style={{
+                flex: 1, padding: "11px 20px", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                background: (submitting || (q.required && !answered)) ? "var(--border)" : "var(--brand)",
+                color: (submitting || (q.required && !answered)) ? "var(--muted)" : "#fff",
+                border: "none",
+                transition: "background 0.15s",
+              }}
             >
-              {submitting ? "Submitting…" : isLast ? "Submit" : "Next →"}
+              {submitting ? "Submitting…" : isLast ? "Submit answers" : "Next →"}
             </button>
           </div>
         </div>
+      </div>
 
-        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, marginTop: 16 }}>
-          TrustLine · Vera — your answers are encrypted and stored securely
-        </p>
+      <div style={{ padding: "16px 32px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "center" }}>
+        <span style={{ fontSize: 11, color: "var(--subtle)", letterSpacing: "0.04em" }}>TrustLine · Vera — your answers are encrypted and stored securely</span>
       </div>
     </main>
   );
@@ -141,6 +162,11 @@ function QuestionInput({
   value: string | boolean | number | undefined;
   onChange: (v: string | boolean | number) => void;
 }) {
+  const baseBtn: React.CSSProperties = {
+    flex: 1, padding: "12px 0", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: "pointer",
+    border: "1.5px solid var(--border)", transition: "all 0.12s",
+  };
+
   if (q.type === "boolean") {
     return (
       <div style={{ display: "flex", gap: 10 }}>
@@ -149,10 +175,10 @@ function QuestionInput({
             key={String(opt)}
             onClick={() => onChange(opt)}
             style={{
-              flex: 1, padding: "12px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
-              background: value === opt ? "#1d76db" : "var(--bg)",
+              ...baseBtn,
+              background: value === opt ? "var(--brand)" : "var(--panel)",
               color: value === opt ? "#fff" : "var(--text)",
-              border: `2px solid ${value === opt ? "#1d76db" : "var(--border)"}`,
+              borderColor: value === opt ? "var(--brand)" : "var(--border)",
             }}
           >
             {opt ? "Yes" : "No"}
@@ -170,10 +196,12 @@ function QuestionInput({
             key={opt}
             onClick={() => onChange(opt)}
             style={{
-              padding: "12px 16px", borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: "pointer", textAlign: "left",
-              background: value === opt ? "#1d76db" : "var(--bg)",
-              color: value === opt ? "#fff" : "var(--text)",
-              border: `2px solid ${value === opt ? "#1d76db" : "var(--border)"}`,
+              ...baseBtn,
+              flex: "none", padding: "12px 16px", textAlign: "left",
+              background: value === opt ? "var(--brand-muted)" : "var(--panel)",
+              color: value === opt ? "var(--brand)" : "var(--text)",
+              borderColor: value === opt ? "var(--brand)" : "var(--border)",
+              fontWeight: value === opt ? 700 : 500,
             }}
           >
             {opt}
@@ -195,39 +223,37 @@ function QuestionInput({
     );
   }
 
-  // text
   return (
     <textarea
       value={value as string ?? ""}
       onChange={(e) => onChange(e.target.value)}
       rows={3}
-      style={{ ...inputStyle, resize: "vertical", height: "auto", padding: "10px 12px" }}
+      style={{ ...inputStyle, resize: "vertical", height: "auto", padding: "10px 14px" }}
       placeholder="Type your answer here…"
     />
   );
 }
 
 const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-  background: "var(--bg)", border: "2px solid var(--border)", color: "var(--text)",
+  width: "100%", padding: "11px 14px", borderRadius: 7, fontSize: 14,
+  background: "var(--panel)", border: "1.5px solid var(--border)", color: "var(--text)",
   outline: "none", boxSizing: "border-box",
 };
 
-function btnStyle(variant: "primary" | "secondary"): React.CSSProperties {
-  return {
-    padding: "12px 20px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none",
-    background: variant === "primary" ? "#1d76db" : "var(--panel)",
-    color: variant === "primary" ? "#fff" : "var(--text)",
-  };
-}
-
-function Screen({ icon, title, body }: { icon: string; title: string; body: string }) {
+function Screen({ title, body, loading, success }: { title: string; body: string; loading?: boolean; success?: boolean }) {
   return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-      <div className="card" style={{ maxWidth: 420, textAlign: "center", padding: 40 }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>{icon}</div>
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px" }}>{title}</h1>
-        <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>{body}</p>
+    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+      <div style={{ padding: "20px 32px", borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", color: "var(--brand)" }}>TRUSTLINE</span>
+      </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: 420, textAlign: "center", padding: "0 24px" }}>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>
+            {success ? "✓" : loading ? "·" : "⚠"}
+          </div>
+          <h1 style={{ fontSize: "1.4rem", marginBottom: 10 }}>{title}</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: 14, margin: 0, lineHeight: 1.6 }}>{body}</p>
+        </div>
       </div>
     </main>
   );

@@ -53,7 +53,7 @@ export default function ReviewQueuePage() {
         return;
       }
       closeModal();
-      await fetchCases(); // refresh the queue
+      await fetchCases();
     } catch {
       setSubmitError("Network error. Please try again.");
     } finally {
@@ -62,47 +62,64 @@ export default function ReviewQueuePage() {
   };
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 24px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
-        <div>
-          <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>TRUSTLINE · VERA</p>
-          <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 700 }}>Review Queue</h1>
-          <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: 13 }}>
-            Cases flagged <span style={{ color: "#e3a008", fontWeight: 600 }}>REFER</span> by Vera awaiting human decision
-          </p>
+    <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      {/* Top bar */}
+      <div style={{
+        background: "var(--panel)",
+        borderBottom: "1px solid var(--border)",
+        padding: "0 32px",
+        height: 56,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <Link href="/" style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", color: "var(--brand)" }}>TRUSTLINE</Link>
+          <span style={{ color: "var(--border)", fontSize: 18 }}>|</span>
+          <Link href="/dashboard" style={{ fontSize: 13, color: "var(--muted)" }}>Cases</Link>
+          <span style={{ color: "var(--border)", fontSize: 14 }}>›</span>
+          <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>Review Queue</span>
         </div>
-        <Link href="/dashboard" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>← Dashboard</Link>
       </div>
 
-      {loading ? (
-        <div style={{ color: "var(--muted)", fontSize: 14 }}>Loading queue…</div>
-      ) : cases.length === 0 ? (
-        <div className="card" style={{ padding: 48, textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>✓</div>
-          <p style={{ color: "var(--muted)", fontSize: 15, margin: 0 }}>No cases need review right now.</p>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 32px" }}>
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: "1.75rem", marginBottom: 6 }}>Review Queue</h1>
+          <p style={{ fontSize: 14, color: "var(--muted)", margin: 0 }}>
+            Cases flagged <span style={{ color: "var(--warning)", fontWeight: 600 }}>REFER</span> by Vera awaiting human decision
+          </p>
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {cases.map((c) => <ReviewCard key={c.id} c={c} onAction={(action) => openModal(c, action)} />)}
-        </div>
-      )}
+
+        {loading ? (
+          <div style={{ color: "var(--muted)", fontSize: 14 }}>Loading queue…</div>
+        ) : cases.length === 0 ? (
+          <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "56px 32px", textAlign: "center" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--success-bg)", border: "1px solid var(--success-border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 18, color: "var(--success)" }}>✓</div>
+            <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>No cases need review right now.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {cases.map((c) => <ReviewCard key={c.id} c={c} onAction={(action) => openModal(c, action)} />)}
+          </div>
+        )}
+      </div>
 
       {/* Decision modal */}
       {modal && (
-        <div style={{
-          position: "fixed", inset: 0, background: "#0009", display: "flex",
-          alignItems: "center", justifyContent: "center", zIndex: 50,
-        }} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div className="card" style={{ width: "100%", maxWidth: 440, padding: 32 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700 }}>
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(26,18,8,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, backdropFilter: "blur(2px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 10, width: "100%", maxWidth: 460, padding: "32px", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+            <h2 style={{ fontSize: "1.2rem", marginBottom: 4 }}>
               {modal.action === "CLEAR" ? "Approve" : "Reject"} — {modal.entityName}
             </h2>
-            <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 20px" }}>
+            <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 24px", lineHeight: 1.5 }}>
               This decision will be recorded in the audit trail and cannot be undone.
             </p>
 
-            <label style={{ fontSize: 13, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-              Reason <span style={{ color: "#d93f0b" }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+              Reason <span style={{ color: "var(--error)" }}>*</span>
             </label>
             <textarea
               value={reason}
@@ -112,23 +129,30 @@ export default function ReviewQueuePage() {
                 ? "e.g. PEP risk assessed, source of funds verified, approved for onboarding."
                 : "e.g. Insufficient documentation, unable to verify source of funds."}
               style={{
-                width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 13,
-                background: "var(--bg)", border: "2px solid var(--border)", color: "var(--text)",
+                width: "100%", padding: "10px 14px", borderRadius: 7, fontSize: 13,
+                background: "var(--panel-raised)", border: "1.5px solid var(--border)", color: "var(--text)",
                 outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: 4,
+                lineHeight: 1.5,
               }}
             />
 
-            {submitError && <div style={{ color: "#d93f0b", fontSize: 13, marginBottom: 8 }}>{submitError}</div>}
+            {submitError && (
+              <div style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 6, padding: "8px 12px", fontSize: 13, color: "var(--error)", marginBottom: 12 }}>
+                {submitError}
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-              <button onClick={closeModal} style={btnStyle("ghost")}>Cancel</button>
+              <button onClick={closeModal} style={ghostBtn}>Cancel</button>
               <button
                 onClick={submitDecision}
                 disabled={submitting || !reason.trim()}
                 style={{
-                  ...btnStyle(modal.action === "CLEAR" ? "approve" : "reject"),
-                  flex: 1,
-                  opacity: (submitting || !reason.trim()) ? 0.6 : 1,
+                  flex: 1, padding: "11px 20px", borderRadius: 7, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer",
+                  background: modal.action === "CLEAR" ? "var(--brand)" : "var(--error)",
+                  color: "#fff",
+                  opacity: (submitting || !reason.trim()) ? 0.55 : 1,
+                  transition: "opacity 0.15s",
                 }}
               >
                 {submitting ? "Submitting…" : modal.action === "CLEAR" ? "✓ Approve" : "✗ Reject"}
@@ -142,50 +166,51 @@ export default function ReviewQueuePage() {
 }
 
 function ReviewCard({ c, onAction }: { c: CaseSummary; onAction: (a: "CLEAR" | "REJECT") => void }) {
-  const riskColors: Record<string, string> = { LOW: "#0e8a16", MEDIUM: "#e3a008", HIGH: "#d93f0b" };
-  const rc = riskColors[c.riskTier] ?? "#8a93a6";
+  const riskColors: Record<string, { color: string; bg: string; border: string }> = {
+    LOW:    { color: "var(--success)", bg: "var(--success-bg)", border: "var(--success-border)" },
+    MEDIUM: { color: "var(--warning)", bg: "var(--warning-bg)", border: "var(--warning-border)" },
+    HIGH:   { color: "var(--error)",   bg: "var(--error-bg)",   border: "var(--error-border)" },
+  };
+  const risk = riskColors[c.riskTier] ?? riskColors.MEDIUM;
   const waitMins = Math.round((Date.now() - new Date(c.createdAt).getTime()) / 60000);
   const waitLabel = waitMins < 60 ? `${waitMins}m` : `${Math.round(waitMins / 60)}h`;
 
   return (
-    <div className="card" style={{ display: "flex", alignItems: "center", gap: 20, padding: "20px 24px" }}>
+    <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", alignItems: "center", gap: 20, padding: "18px 24px" }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
           <span style={{ fontWeight: 700, fontSize: 15 }}>{c.entityName}</span>
-          <span style={{ background: rc + "22", color: rc, border: `1px solid ${rc}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{c.riskTier}</span>
-          <span style={{ background: "#e3a00822", color: "#e3a008", border: "1px solid #e3a00844", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>NEEDS REVIEW</span>
+          <span style={{ background: risk.bg, color: risk.color, border: `1px solid ${risk.border}`, borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{c.riskTier}</span>
+          <span style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--warning-border)", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>NEEDS REVIEW</span>
         </div>
-        <div style={{ color: "var(--muted)", fontSize: 12 }}>
-          {c.reason.replace(/_/g, " ")} · waiting {waitLabel} · <code style={{ fontSize: 11 }}>{c.id}</code>
+        <div style={{ color: "var(--muted)", fontSize: 12.5 }}>
+          {c.reason.replace(/_/g, " ")} · waiting {waitLabel} · <code style={{ fontSize: 11, fontFamily: "monospace", color: "var(--subtle)" }}>{c.id}</code>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-        <Link
-          href={`/dashboard/${c.id}`}
-          style={{ padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
-        >
+        <Link href={`/dashboard/${c.id}`} style={{
+          padding: "8px 14px", borderRadius: 7, fontSize: 13, fontWeight: 600,
+          background: "var(--panel-raised)", color: "var(--text)", border: "1px solid var(--border)",
+          display: "inline-block",
+        }}>
           View case
         </Link>
-        <button onClick={() => onAction("CLEAR")} style={actionBtn("#0e8a16")}>✓ Approve</button>
-        <button onClick={() => onAction("REJECT")} style={actionBtn("#d93f0b")}>✗ Reject</button>
+        <button onClick={() => onAction("CLEAR")} style={decisionBtn("var(--success)", "var(--success-bg)", "var(--success-border)")}>✓ Approve</button>
+        <button onClick={() => onAction("REJECT")} style={decisionBtn("var(--error)", "var(--error-bg)", "var(--error-border)")}>✗ Reject</button>
       </div>
     </div>
   );
 }
 
-function actionBtn(color: string): React.CSSProperties {
+function decisionBtn(color: string, bg: string, border: string): React.CSSProperties {
   return {
-    padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-    background: color + "22", color, border: `1.5px solid ${color}55`,
+    padding: "8px 16px", borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: "pointer",
+    background: bg, color, border: `1.5px solid ${border}`,
   };
 }
 
-function btnStyle(variant: "ghost" | "approve" | "reject"): React.CSSProperties {
-  const map = {
-    ghost: { background: "var(--bg)", color: "var(--muted)", border: "1px solid var(--border)" },
-    approve: { background: "#0e8a16", color: "#fff", border: "none" },
-    reject: { background: "#d93f0b", color: "#fff", border: "none" },
-  };
-  return { padding: "10px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", ...map[variant] };
-}
+const ghostBtn: React.CSSProperties = {
+  padding: "11px 20px", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: "pointer",
+  background: "var(--panel-raised)", color: "var(--text-secondary)", border: "1px solid var(--border)",
+};
