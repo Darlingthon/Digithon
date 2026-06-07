@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MOCK_METRICS } from "@trustline/shared/fixtures";
 
 // Foundation landing page. Confirms the scaffold boots and the shared package
@@ -26,9 +27,12 @@ export default function Home() {
         <Track color="var(--frontend)" name="C · Frontend" what="IDV, questionnaire, dashboard" />
       </div>
 
-      <p className="muted" style={{ marginTop: 28, fontSize: 13 }}>
-        Mock API: <code>/api/cases</code> · <code>/api/metrics</code>
-      </p>
+      <div style={{ marginTop: 28, display: "flex", gap: 16, alignItems: "center" }}>
+        <Link href="/dashboard" style={{ background: "#1d76db", color: "#fff", padding: "10px 20px", borderRadius: 8, textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
+          Open Reviewer Dashboard →
+        </Link>
+        <span className="muted" style={{ fontSize: 13 }}>Mock API: <code>/api/cases</code> · <code>/api/metrics</code></span>
+      </div>
     </main>
   );
 }
