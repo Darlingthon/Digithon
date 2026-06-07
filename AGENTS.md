@@ -176,6 +176,10 @@ Skills are specialized instruction sets located in `.agents/skills/` (project) a
 - **PRD authoring** → skip in hackathon mode unless explicitly requested.
 - **Playwright** → load `playwright-best-practices` only if you decide an automated test is genuinely faster than manual checking.
 - **Caveman mode / terse communication** → always load and use `caveman` for agent responses unless the user explicitly says `stop caveman` or `normal mode`.
+- **Git commits** → load `git-commit` for well-structured conventional commit messages.
+- **Branch creation** → load `git-flow-branch-creator` for creating feature branches.
+- **GitHub issues** → load `github-issues` when managing or referencing GitHub issues.
+- **GitHub releases** → load `github-release` when cutting a release or tagging a version.
 
 ## assistant-ui Stack
 

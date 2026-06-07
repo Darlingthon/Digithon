@@ -25,6 +25,36 @@
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
     },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "git-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "2607fc60629b82b257136dd2a7a373f0a4466c0b49df7746d845d59313c99b21"
+    },
+    "git-flow-branch-creator": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-flow-branch-creator/SKILL.md",
+      "computedHash": "8add10a7fce31ef99856d36bffeb90f1f1130f5afd88b111417c257f1e5d39bd"
+    },
+    "github-issues": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/github-issues/SKILL.md",
+      "computedHash": "efa9746a60c4507ad5a7ad60e1e9a704b4eea06c1229befe3c86b3bbcaea67c9"
+    },
+    "github-release": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/github-release/SKILL.md",
+      "computedHash": "990bc23d582654da53518caf2c4e076d5ccac626cb06ed1fedb3b66836d6997d"
+    },
     "google-agents-cli-adk-code": {
       "source": "google/agents-cli",
       "sourceType": "github",
@@ -91,6 +121,12 @@
       "skillPath": "assistant-ui/skills/setup/SKILL.md",
       "computedHash": "4613a1ba6ba0bd46ed0790e7e3e3b108773abfd7b988014f97643146d337a1d8"
     },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "8f8bcc9024aa068245fac646d654a18c80280e4b06112ccd3e691a8c96cd66bd"
+    },
     "streaming": {
       "source": "assistant-ui/skills",
       "sourceType": "github",
@@ -108,6 +144,12 @@
       "sourceType": "github",
       "skillPath": "assistant-ui/skills/tools/SKILL.md",
       "computedHash": "2236be8f55e7938cd1176e5cb33a0654c655dee9037f31a9f95c09a2d2dbc046"
+    },
+    "twilio-send-message": {
+      "source": "twilio/ai",
+      "sourceType": "github",
+      "skillPath": "skills/twilio/twilio-send-message/SKILL.md",
+      "computedHash": "79e005149cc4360426e72a7627a0dee5156d18a01961702160af161c68cb52da"
     },
     "twilio-sms-send-message": {
       "source": "twilio/ai",
