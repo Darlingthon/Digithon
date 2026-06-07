@@ -1,9 +1,21 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { CaseSummary, CaseStatus, DecisionOutcome, RiskTierName } from "@trustline/shared";
-import { MOCK_CASES } from "@trustline/shared/fixtures";
 
 export default function DashboardPage() {
-  const cases: CaseSummary[] = MOCK_CASES;
+  const [cases, setCases] = useState<CaseSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/cases")
+      .then((r) => r.json())
+      .then((d) => setCases(d.cases ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const needsReview = cases.filter((c) => c.status === "NEEDS_REVIEW").length;
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px" }}>
@@ -12,7 +24,12 @@ export default function DashboardPage() {
           <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>TRUSTLINE · VERA</p>
           <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 700 }}>Reviewer Dashboard</h1>
         </div>
-        <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          {needsReview > 0 && (
+            <Link href="/dashboard/review" style={{ background: "#e3a008", color: "#000", padding: "6px 14px", borderRadius: 8, fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
+              Review Queue ({needsReview})
+            </Link>
+          )}
           <Link href="/dashboard/metrics" style={{ color: "var(--brain)", fontSize: 13, textDecoration: "none", fontWeight: 600 }}>Live Metrics →</Link>
           <Link href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>← Home</Link>
         </div>
@@ -21,42 +38,48 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
         <StatCard label="Total cases" value={String(cases.length)} />
         <StatCard label="Decided" value={String(cases.filter((c) => c.status === "DECIDED").length)} />
-        <StatCard label="Needs review" value={String(cases.filter((c) => c.status === "NEEDS_REVIEW").length)} accent="#e3a008" />
+        <StatCard label="Needs review" value={String(needsReview)} accent="#e3a008" />
         <StatCard label="In progress" value={String(cases.filter((c) => !["DECIDED", "NEEDS_REVIEW"].includes(c.status)).length)} />
       </div>
 
-      <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>
-              <Th>Entity</Th>
-              <Th>Status</Th>
-              <Th>Risk</Th>
-              <Th>Reason</Th>
-              <Th>Created</Th>
-              <Th>Outcome</Th>
-              <Th>{""}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.map((c, i) => (
-              <tr key={c.id} style={{ borderBottom: i < cases.length - 1 ? "1px solid var(--border)" : "none" }}>
-                <td style={tdStyle}><span style={{ fontWeight: 600 }}>{c.entityName}</span></td>
-                <td style={tdStyle}><StatusBadge status={c.status} /></td>
-                <td style={tdStyle}><RiskBadge tier={c.riskTier} /></td>
-                <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{c.reason.replace(/_/g, " ")}</span></td>
-                <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{fmtDate(c.createdAt)}</span></td>
-                <td style={tdStyle}>{c.outcome ? <OutcomeBadge outcome={c.outcome} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
-                <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <Link href={`/dashboard/${c.id}`} style={{ color: "var(--brain)", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
-                    View →
-                  </Link>
-                </td>
+      {loading ? (
+        <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>Loading cases…</div>
+      ) : cases.length === 0 ? (
+        <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>No cases yet.</div>
+      ) : (
+        <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>
+                <Th>Entity</Th>
+                <Th>Status</Th>
+                <Th>Risk</Th>
+                <Th>Reason</Th>
+                <Th>Created</Th>
+                <Th>Outcome</Th>
+                <Th>{""}</Th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {cases.map((c, i) => (
+                <tr key={c.id} style={{ borderBottom: i < cases.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  <td style={tdStyle}><span style={{ fontWeight: 600 }}>{c.entityName}</span></td>
+                  <td style={tdStyle}><StatusBadge status={c.status} /></td>
+                  <td style={tdStyle}><RiskBadge tier={c.riskTier} /></td>
+                  <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{c.reason.replace(/_/g, " ")}</span></td>
+                  <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{fmtDate(c.createdAt)}</span></td>
+                  <td style={tdStyle}>{c.outcome ? <OutcomeBadge outcome={c.outcome} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                  <td style={{ ...tdStyle, textAlign: "right" }}>
+                    <Link href={`/dashboard/${c.id}`} style={{ color: "var(--brain)", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
+                      View →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }
