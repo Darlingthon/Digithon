@@ -13,13 +13,13 @@
     "@trustline/shared": "*",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "tsx": "^4.19.2",
     "twilio": "^5.4.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "@types/ws": "^8.5.13",
-    "tsx": "^4.19.2"
+    "@types/ws": "^8.5.13"
   }
 }

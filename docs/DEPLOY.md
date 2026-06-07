@@ -119,7 +119,8 @@ gcloud run services update-traffic web --to-revisions REVISION=100 --region $REG
 
 ## Follow-ups / known gaps
 
-- `channels` image is ~1.9 GB (hoisted workspace deps). Slim later with a pruned
-  install if cold starts hurt.
 - Min instances default 0 → cold starts. Set `--min-instances=1` on the demo
   service before presenting.
+- Image sizes: `web` ~453 MB, `channels` ~750 MB (scoped prod install excludes
+  the monorepo's Next.js deps; remainder is the Node base + Prisma engine). An
+  Alpine/musl base could shave more but needs Prisma `binaryTargets` tuning.
