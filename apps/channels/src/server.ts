@@ -1,11 +1,12 @@
 import http from "node:http";
 import express from "express";
 import { config, hasTwilio, hasOpenAI } from "./config.js";
-import { dispatchQuestionnaire, verifyOtp } from "./sms.js";
+import { dispatchQuestionnaire, sendInvite, sendAnswersConfirmation, verifyOtp } from "./sms.js";
 import { startCall } from "./twilio.js";
 import { verifyTwilioSignature, inboundSms, smsStatus } from "./webhooks.js";
 import { voiceTwiml } from "./voice/twiml.js";
 import { attachVoiceBridge } from "./voice/bridge.js";
+import { startFallbackSweep } from "./fallback.js";
 
 const app = express();
 app.use(express.urlencoded({ extended: false })); // Twilio webhooks are form-encoded
@@ -15,12 +16,34 @@ app.get("/health", (_req, res) =>
   res.json({ ok: true, twilio: hasTwilio ? "live" : "dry-run", voice: hasOpenAI ? "live" : "disabled" })
 );
 
+// ── Invite SMS: first touch, a link to start IDV (case stays IDV_PENDING) ──
+app.post("/invite/:caseId", async (req, res) => {
+  const { phone } = req.body ?? {};
+  if (!phone) return res.status(400).json({ error: "phone required (E.164)" });
+  try {
+    res.json(await sendInvite(req.params.caseId, phone));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
 // ── Internal trigger: dispatch the questionnaire to a case (Brain/demo calls this) ──
 app.post("/dispatch/:caseId", async (req, res) => {
   const { phone } = req.body ?? {};
   if (!phone) return res.status(400).json({ error: "phone required (E.164)" });
   try {
     res.json(await dispatchQuestionnaire(req.params.caseId, phone));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// ── Answers confirmation: text the customer a copy of their answers ──
+app.post("/confirm/:caseId", async (req, res) => {
+  try {
+    res.json(await sendAnswersConfirmation(req.params.caseId));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: (e as Error).message });
@@ -72,4 +95,5 @@ attachVoiceBridge(server);
 server.listen(config.port, () => {
   console.log(`🟢 channels on :${config.port}  (twilio: ${hasTwilio ? "live" : "dry-run"}, voice: ${hasOpenAI ? "live" : "disabled"})`);
   if (!config.publicUrl) console.log("   set CHANNELS_PUBLIC_URL (ngrok) for Twilio callbacks + voice");
+  startFallbackSweep();
 });

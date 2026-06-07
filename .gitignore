@@ -31,3 +31,7 @@ venv/
 *.log
 .vercel
 .turbo
+ngrok.tunnels.yml
+
+# typescript incremental build info
+*.tsbuildinfo

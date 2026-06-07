@@ -20,6 +20,8 @@ export type CaseStatus =
 export type DecisionOutcome = "CLEAR" | "REFER" | "REJECT";
 export type RiskTierName = "LOW" | "MEDIUM" | "HIGH";
 export type CaseReason = "ONBOARDING" | "REKYC_PERIODIC" | "ID_EXPIRY";
+// LANGUAGES / languageName / LanguageCode live in ./questionnaire (re-exported
+// above) so Next client components can import them via the subpath.
 
 // ─────────────────── Case-action API contract ───────────────────
 // The agent (Track A) exposes these; Channels (B) and Frontend (C) call them.

@@ -74,6 +74,21 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ id:
     ? Math.round((new Date(c.decidedAt).getTime() - new Date(c.createdAt).getTime()) / 60000)
     : null;
 
+  // Voice-call transcripts (Vera ↔ customer), recorded by the channels bridge.
+  const calls = raw.calls.map((call) => {
+    const t = (call.transcript ?? null) as { turns?: { role: string; text: string }[]; answersSubmitted?: boolean } | null;
+    return {
+      id: call.id,
+      status: call.status as string,
+      direction: call.direction as string,
+      startedAt: call.startedAt?.toISOString?.() ?? null,
+      recordingUrl: call.recordingUrl ?? null,
+      turns: Array.isArray(t?.turns) ? t!.turns : [],
+      answersSubmitted: Boolean(t?.answersSubmitted),
+    };
+  });
+  const hasTranscript = calls.some((call) => call.turns.length > 0);
+
   return (
     <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
       {/* Top bar */}
@@ -163,6 +178,30 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ id:
           ))}
         </Section>
 
+        {/* Call transcript */}
+        {hasTranscript && (
+          <Section title="Call Transcript" style={{ marginBottom: 16 }}>
+            {calls.filter((call) => call.turns.length > 0).map((call) => (
+              <div key={call.id} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ background: "var(--info-bg)", color: "var(--info)", border: "1px solid var(--info-border)", borderRadius: 4, padding: "2px 8px", fontSize: 11.5, fontWeight: 600 }}>
+                    {call.direction} CALL
+                  </span>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>{call.startedAt ? fmtDate(call.startedAt) : "—"}</span>
+                  {call.answersSubmitted && <span style={{ fontSize: 12, color: "var(--success)", fontWeight: 600 }}>✓ Answers captured</span>}
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>· {call.turns.length} turns</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {call.turns.map((turn, i) => <TranscriptTurn key={i} role={turn.role} text={turn.text} />)}
+                </div>
+                {call.recordingUrl && (
+                  <a href={call.recordingUrl} style={{ display: "inline-block", marginTop: 12, fontSize: 12.5, color: "var(--brand)", fontWeight: 600 }}>▶ Listen to recording</a>
+                )}
+              </div>
+            ))}
+          </Section>
+        )}
+
         {/* AML Screening */}
         <Section title="AML Screening" style={{ marginBottom: 16 }}>
           {c.screeningResults.length === 0 ? (
@@ -217,6 +256,26 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid var(--border-light)", fontSize: 13 }}>
       <span style={{ color: "var(--muted)" }}>{label}</span>
       <span style={{ fontWeight: 500, textAlign: "right", maxWidth: "62%", color: "var(--text)" }}>{value}</span>
+    </div>
+  );
+}
+
+function TranscriptTurn({ role, text }: { role: string; text: string }) {
+  const isVera = role === "vera";
+  return (
+    <div style={{ display: "flex", justifyContent: isVera ? "flex-start" : "flex-end" }}>
+      <div style={{ maxWidth: "78%" }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: isVera ? "var(--brand)" : "var(--muted)", marginBottom: 3, textAlign: isVera ? "left" : "right" }}>
+          {isVera ? "Vera" : "Customer"}
+        </div>
+        <div style={{
+          background: isVera ? "var(--brand-muted, #EEF2FF)" : "var(--panel-raised, #F3F4F6)",
+          border: `1px solid ${isVera ? "var(--info-border)" : "var(--border)"}`,
+          borderRadius: 10, padding: "8px 12px", fontSize: 13.5, lineHeight: 1.5, color: "var(--text)",
+        }}>
+          {text}
+        </div>
+      </div>
     </div>
   );
 }

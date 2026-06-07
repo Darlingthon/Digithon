@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type IdvState = "loading" | "ready" | "mock" | "processing" | "success" | "failed" | "error";
+type IdvState = "loading" | "ready" | "mock" | "processing" | "success" | "calling" | "failed" | "error";
 
 export default function IdvPage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -50,8 +50,13 @@ export default function IdvPage() {
           const reviewResult = payload?.reviewResult?.reviewAnswer;
           if (reviewResult === "GREEN") {
             await markIdv(caseId, true, payload);
-            setState("success");
-            setTimeout(() => router.push(`/verify/${caseId}`), 2000);
+            const next = await dispatchAfterIdv(caseId);
+            if (next?.channel === "call") {
+              setState("calling");
+            } else {
+              setState("success");
+              setTimeout(() => router.push(`/verify/${caseId}`), 2000);
+            }
           } else if (reviewResult === "RED") {
             await markIdv(caseId, false, payload);
             setState("failed");
@@ -76,8 +81,14 @@ export default function IdvPage() {
   const simulateResult = async (passed: boolean) => {
     setState("processing");
     await markIdv(caseId!, passed, { demo: true });
-    setState(passed ? "success" : "failed");
-    if (passed) setTimeout(() => router.push(`/verify/${caseId}`), 2000);
+    if (!passed) { setState("failed"); return; }
+    const next = await dispatchAfterIdv(caseId!);
+    if (next?.channel === "call") {
+      setState("calling");
+    } else {
+      setState("success");
+      setTimeout(() => router.push(`/verify/${caseId}`), 2000);
+    }
   };
 
   return (
@@ -140,6 +151,14 @@ export default function IdvPage() {
             />
           )}
 
+          {state === "calling" && (
+            <StatusCard
+              bg="var(--success-bg)" border="var(--success-border)" titleColor="var(--success)"
+              title="Identity verified — Vera is calling you"
+              body="Keep your phone handy. Vera will call shortly to complete a few quick questions by voice. You can close this page."
+            />
+          )}
+
           {state === "failed" && (
             <StatusCard
               bg="var(--error-bg)" border="var(--error-border)" titleColor="var(--error)"
@@ -189,6 +208,18 @@ async function markIdv(caseId: string, passed: boolean, rawResult: unknown) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ passed, rawResult }),
   });
+}
+
+// IDV passed → collect the questionnaire over the chosen channel: Vera calls
+// (CALL) or we text the questionnaire link + OTP (SMS). Returns { channel } so
+// the page can either show "Vera is calling" or move on to the web OTP gate.
+async function dispatchAfterIdv(caseId: string): Promise<{ channel?: string } | null> {
+  try {
+    const r = await fetch(`/api/cases/${caseId}/actions/post-idv`, { method: "POST" });
+    return await r.json();
+  } catch {
+    return null;
+  }
 }
 
 function loadScript(src: string): Promise<void> {

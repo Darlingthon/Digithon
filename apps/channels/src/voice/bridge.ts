@@ -1,7 +1,8 @@
 import type { Server } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
-import { getCase, recordAnswers, recordCallTranscript } from "@trustline/db";
-import { questionsForTier, type Question } from "@trustline/shared";
+import { getCase, recordAnswers, recordCallTranscript, finalizeCase } from "@trustline/db";
+import { sendAnswersConfirmation } from "../sms.js";
+import { questionsForTier, languageName, type Question } from "@trustline/shared";
 import { config, hasOpenAI } from "./../config.js";
 import { hangUp } from "./../twilio.js";
 
@@ -139,13 +140,17 @@ function handleTwilioStream(twilioWs: WebSocket) {
     const tier = (caseData?.riskTier ?? "LOW") as "LOW" | "MEDIUM" | "HIGH";
     const name = caseData?.entity?.fullName ?? "the customer";
     const questions = questionsForTier(tier);
+    // Per-case language (falls back to the configured default). Drives both what
+    // Vera speaks and the transcription language so accented audio isn't mis-read.
+    const langCode = (caseData?.language as string) || config.openai.transcribeLanguage;
+    const langName = languageName(langCode);
 
     pendingSession = {
       type: "session.update",
       session: {
         type: "realtime",
         output_modalities: ["audio"],
-        instructions: buildInstructions(name, questions),
+        instructions: buildInstructions(name, questions, langName),
         audio: {
           input: {
             format: { type: "audio/pcmu" },
@@ -153,7 +158,14 @@ function handleTwilioStream(twilioWs: WebSocket) {
             // we never create per-turn responses ourselves. Threshold tuned up a
             // touch to resist phone-echo false triggers.
             turn_detection: { type: "server_vad", threshold: config.openai.vadThreshold },
-            transcription: { model: config.openai.transcribeModel },
+            transcription: {
+              model: config.openai.transcribeModel,
+              // Pin the call's language so accented phone audio doesn't get
+              // mis-detected as another language, and prime the model with the
+              // KYC vocabulary it should expect so terms/numbers come through.
+              ...(langCode ? { language: langCode } : {}),
+              prompt: buildTranscriptionPrompt(questions),
+            },
           },
           output: { format: { type: "audio/pcmu" }, voice: config.openai.voice },
         },
@@ -259,6 +271,17 @@ function handleTwilioStream(twilioWs: WebSocket) {
       if (caseId) await recordAnswers(caseId, "VOICE", answers);
       answersSubmitted = true;
       console.log(`✅ voice answers recorded for ${caseId}`);
+      if (caseId) {
+        // Text the customer a copy of their answers with a correct-if-wrong note.
+        sendAnswersConfirmation(caseId)
+          .then((r) => console.log(`✉ answers confirmation:`, JSON.stringify(r)))
+          .catch((e) => console.warn("sendAnswersConfirmation failed:", (e as Error).message));
+        // Answers are in — run AML screening + decision so the case finishes on
+        // its own once Vera hangs up (best-effort; won't block the call).
+        finalizeCase(caseId)
+          .then((d) => console.log(`🏁 case ${caseId} finalized: ${d.outcome ?? d.status}`))
+          .catch((e) => console.warn("finalizeCase failed:", (e as Error).message));
+      }
     } catch (e) {
       ok = false;
       console.warn("recordAnswers failed:", (e as Error).message);
@@ -297,10 +320,12 @@ function handleTwilioStream(twilioWs: WebSocket) {
 }
 
 // ── prompt + tool builders ──
-function buildInstructions(name: string, questions: Question[]): string {
+function buildInstructions(name: string, questions: Question[], language = "English"): string {
   const list = questions.map((q, i) => `${i + 1}. ${q.voicePrompt}  (record as: ${q.field})`).join("\n");
   return [
     `You are Vera, an AI verification officer for TrustLine, on a recorded phone call with ${name}.`,
+    ``,
+    `LANGUAGE: Speak entirely in ${language}. Conduct the whole call in ${language} — greeting, questions, confirmations, and goodbye. If the customer switches to another language, follow them, but otherwise stay in ${language}.`,
     ``,
     `OPEN THE CALL: greet ${name} by name and, in the same short opening, say you're Vera from TrustLine calling on a recorded line about the verification link already texted to them — then go straight into the first question. One or two natural sentences, no long preamble.`,
     ``,
@@ -318,6 +343,25 @@ function buildInstructions(name: string, questions: Question[]): string {
     ``,
     `When every question is answered, in that SAME final turn: give a short thank-you and goodbye AND call the submit_questionnaire tool with the normalized fields. Do not wait or add a separate closing turn — speak the goodbye and call the tool together.`,
   ].join("\n");
+}
+
+// Prime the transcription model with the vocabulary it should expect on this
+// call (the questionnaire's answer options + topics), so short, accented, or
+// low-bitrate phone answers like income bands and numbers come through right.
+function buildTranscriptionPrompt(questions: Question[]): string {
+  const terms = new Set<string>();
+  for (const q of questions) {
+    for (const opt of q.options ?? []) terms.add(opt);
+  }
+  const vocab = Array.from(terms).join(", ");
+  return [
+    "This is a KYC verification phone call between an agent (Vera) and a customer.",
+    "Topics: occupation, annual income band, source of funds, source of wealth,",
+    "politically exposed person (PEP), expected monthly transaction volume, foreign accounts.",
+    vocab ? `Likely answers include: ${vocab}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function submitTool(questions: Question[]) {

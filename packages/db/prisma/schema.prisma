@@ -75,6 +75,13 @@ model Case {
   riskTier  RiskTier   @default(LOW)
   reason    CaseReason @default(ONBOARDING)
 
+  // How the questionnaire is collected after IDV passes: "CALL" (Vera phones
+  // right away) or "SMS" (link texted; Vera auto-calls if not filled in time).
+  qDelivery String?
+
+  // ISO-639-1 language Vera speaks + transcribes on the call (default "en").
+  language  String?
+
   // Phase 2: company case fans out into per-person sub-cases.
   parentCaseId String?
   parentCase   Case?   @relation("CaseChildren", fields: [parentCaseId], references: [id])
