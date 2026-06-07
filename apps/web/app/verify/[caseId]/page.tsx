@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useRef } from "react";
-import { MOCK_CASES } from "@trustline/shared/fixtures";
 
 export default function VerifyPage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -13,11 +12,6 @@ export default function VerifyPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Determine case state up-front for early redirect messaging
-  const c = caseId ? MOCK_CASES.find((x) => x.id === caseId) : undefined;
-  const wrongState = c && c.status !== "QUESTIONNAIRE_SENT";
-  const notFound = !c;
 
   const handleInput = (i: number, val: string) => {
     if (!/^\d?$/.test(val)) return;
@@ -63,14 +57,6 @@ export default function VerifyPage() {
       setLoading(false);
     }
   };
-
-  if (notFound) return <ErrorScreen message="Link not found or expired." />;
-  if (wrongState) {
-    const msg = c.status === "QUESTIONNAIRE_DONE" || c.status === "DECIDED"
-      ? "You've already completed the questionnaire. Thank you!"
-      : "This link is no longer active.";
-    return <ErrorScreen message={msg} />;
-  }
 
   return (
     <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
@@ -132,17 +118,6 @@ export default function VerifyPage() {
         <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, marginTop: 16 }}>
           TrustLine · Vera — secure identity verification
         </p>
-      </div>
-    </main>
-  );
-}
-
-function ErrorScreen({ message }: { message: string }) {
-  return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-      <div className="card" style={{ maxWidth: 380, textAlign: "center", padding: 36 }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-        <p style={{ fontSize: 15, margin: 0 }}>{message}</p>
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MOCK_CASE_DETAILS } from "@trustline/shared/fixtures";
+import { getCase } from "@trustline/db";
 import type {
   CaseDetail,
   CaseStatus,
@@ -12,8 +12,63 @@ import type {
 
 export default async function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = MOCK_CASE_DETAILS.find((x) => x.id === id);
-  if (!c) return notFound();
+
+  let raw: Awaited<ReturnType<typeof getCase>>;
+  try {
+    raw = await getCase(id);
+  } catch {
+    return notFound();
+  }
+
+  const c: CaseDetail = {
+    id: raw.id,
+    entityName: raw.entity.fullName,
+    email: raw.entity.email,
+    phone: raw.entity.phone,
+    status: raw.status as CaseStatus,
+    riskTier: raw.riskTier as RiskTierName,
+    reason: raw.reason as CaseDetail["reason"],
+    createdAt: raw.createdAt.toISOString(),
+    decidedAt: raw.decidedAt?.toISOString() ?? null,
+    outcome: (raw.decision?.outcome ?? null) as DecisionOutcome | null,
+    idvChecks: raw.idvChecks.map((idv) => ({
+      id: idv.id,
+      status: idv.status as "PENDING" | "PASSED" | "FAILED",
+      provider: idv.provider,
+      providerRef: idv.providerRef,
+      documentType: idv.documentType,
+      livenessPass: idv.livenessPass,
+      createdAt: idv.createdAt.toISOString(),
+    })),
+    questionnaireResponses: raw.responses.map((r) => ({
+      channel: r.channel as "WEB" | "VOICE",
+      answers: r.answers as Record<string, unknown>,
+      complete: r.complete,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    screeningResults: raw.screenings.map((s) => ({
+      id: s.id,
+      type: s.type as "SANCTIONS" | "PEP" | "ADVERSE_MEDIA",
+      hit: s.hit,
+      details: s.details as Record<string, unknown> | null,
+    })),
+    decision: raw.decision
+      ? {
+          outcome: raw.decision.outcome as DecisionOutcome,
+          reasons: raw.decision.reasons as string[],
+          automated: raw.decision.automated,
+          reviewedBy: null,
+          createdAt: raw.decision.createdAt.toISOString(),
+        }
+      : null,
+    auditEvents: raw.auditEvents.map((e) => ({
+      id: e.id,
+      type: e.type,
+      actor: e.actor,
+      data: e.data as Record<string, unknown> | null,
+      createdAt: e.createdAt.toISOString(),
+    })),
+  };
 
   const timeMins = c.decidedAt
     ? Math.round((new Date(c.decidedAt).getTime() - new Date(c.createdAt).getTime()) / 60000)
