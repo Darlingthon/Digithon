@@ -72,7 +72,8 @@ export default function IdvPage() {
         })
         .build();
 
-      sdk.launch(containerRef.current!);
+      if (!containerRef.current) { setState("error"); setErrorMsg("SDK container not ready."); return; }
+      sdk.launch(containerRef.current);
       setState("ready");
     };
 

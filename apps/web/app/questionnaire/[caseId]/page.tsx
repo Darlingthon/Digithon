@@ -26,12 +26,12 @@ export default function QuestionnairePage() {
     if (!caseId) return;
     // Fetch case to get risk tier, then load questionnaire schema
     fetch(`/api/cases/${caseId}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("case fetch failed"); return r.json(); })
       .then((data) => {
         const tier: RiskTierName = data.case?.riskTier ?? "LOW";
         return fetch(`/api/questionnaire?riskTier=${tier}`);
       })
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("questionnaire fetch failed"); return r.json(); })
       .then(setPayload)
       .catch(() => setError("Failed to load questionnaire. Please try again."));
   }, [caseId]);
