@@ -1,0 +1,31 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+dist/
+out/
+build/
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# prisma
+packages/db/prisma/*.db
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.python-version
+
+# misc
+.DS_Store
+*.log
+.vercel
+.turbo

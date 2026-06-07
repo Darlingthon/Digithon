@@ -1,0 +1,230 @@
+// TrustLine data model — the shared contract for all three tracks.
+// Phase 1 = consumer KYC. Phase 2 (KYB) extensibility: a Case belongs to an
+// Entity that may be a PERSON or a COMPANY, and a company case can later fan
+// out into per-person sub-cases (parentCaseId).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── Entities ───────────────────────────
+
+enum EntityType {
+  PERSON
+  COMPANY
+}
+
+model Entity {
+  id        String     @id @default(cuid())
+  type      EntityType @default(PERSON)
+  fullName  String
+  email     String?
+  phone     String? // E.164, used by Twilio
+  country   String? // ISO-3166 alpha-2
+  dob       DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  cases Case[]
+}
+
+// ─────────────────────────── Case (state machine) ───────────────────────────
+
+// Canonical case lifecycle. ALL tracks advance cases through these states.
+// CREATED -> IDV_PENDING -> IDV_DONE -> QUESTIONNAIRE_SENT ->
+//   QUESTIONNAIRE_DONE -> SCREENING -> DECIDED
+// Plus lifecycle states for proactive re-verification.
+enum CaseStatus {
+  CREATED
+  IDV_PENDING
+  IDV_DONE
+  QUESTIONNAIRE_SENT
+  QUESTIONNAIRE_DONE
+  SCREENING
+  DECIDED
+  // proactive re-verification (re-KYC / ID expiry)
+  REVERIFY_DUE
+  REVERIFY_SENT
+  // terminal/escalation
+  NEEDS_REVIEW
+}
+
+enum RiskTier {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Why a case exists — initial onboarding vs proactive lifecycle work.
+enum CaseReason {
+  ONBOARDING
+  REKYC_PERIODIC
+  ID_EXPIRY
+}
+
+model Case {
+  id        String     @id @default(cuid())
+  entityId  String
+  entity    Entity     @relation(fields: [entityId], references: [id])
+  status    CaseStatus @default(CREATED)
+  riskTier  RiskTier   @default(LOW)
+  reason    CaseReason @default(ONBOARDING)
+
+  // Phase 2: company case fans out into per-person sub-cases.
+  parentCaseId String?
+  parentCase   Case?   @relation("CaseChildren", fields: [parentCaseId], references: [id])
+  childCases   Case[]  @relation("CaseChildren")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  decidedAt DateTime? // set when status -> DECIDED, used for time-to-decision
+
+  idvChecks    IdvCheck[]
+  responses    QuestionnaireResponse[]
+  screenings   ScreeningResult[]
+  decision     Decision?
+  calls        Call[]
+  auditEvents  AuditEvent[]
+  otpSessions  OtpSession[]
+}
+
+// ─────────────────────────── IDV (Track C / Sumsub) ───────────────────────────
+
+enum IdvStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+model IdvCheck {
+  id           String    @id @default(cuid())
+  caseId       String
+  case         Case      @relation(fields: [caseId], references: [id])
+  provider     String    @default("sumsub")
+  providerRef  String? // Sumsub applicantId / inspectionId
+  status       IdvStatus @default(PENDING)
+  documentType String?
+  documentExp  DateTime? // drives ID-expiry re-verification
+  livenessPass Boolean?
+  rawResult    Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─────────────────────────── Questionnaire (Track A defines once) ───────────────────────────
+
+// The questionnaire is DEFINED ONCE in code (packages/shared) and rendered to
+// web + voice. We persist only the normalized ANSWERS here, channel-agnostic.
+enum AnswerChannel {
+  WEB
+  VOICE
+}
+
+model QuestionnaireResponse {
+  id              String        @id @default(cuid())
+  caseId          String
+  case            Case          @relation(fields: [caseId], references: [id])
+  questionnaireId String // which definition/version was used
+  channel         AnswerChannel
+  // normalized field -> answer value, same shape regardless of channel
+  answers         Json
+  complete        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// ─────────────────────────── Screening + Decision (Track A) ───────────────────────────
+
+enum ScreeningType {
+  SANCTIONS
+  PEP
+  ADVERSE_MEDIA
+}
+
+model ScreeningResult {
+  id        String        @id @default(cuid())
+  caseId    String
+  case      Case          @relation(fields: [caseId], references: [id])
+  type      ScreeningType
+  hit       Boolean       @default(false)
+  details   Json?
+  provider  String        @default("sumsub")
+  createdAt DateTime      @default(now())
+}
+
+enum DecisionOutcome {
+  CLEAR
+  REFER
+  REJECT
+}
+
+model Decision {
+  id        String          @id @default(cuid())
+  caseId    String          @unique
+  case      Case            @relation(fields: [caseId], references: [id])
+  outcome   DecisionOutcome
+  reasons   Json // explainable rationale, array of strings
+  // true when reached with no human touch (straight-through processing)
+  automated Boolean         @default(true)
+  reviewedBy String? // human reviewer id on handoff
+  createdAt DateTime         @default(now())
+}
+
+// ─────────────────────────── Calls (Track B) ───────────────────────────
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  INITIATED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+}
+
+model Call {
+  id          String        @id @default(cuid())
+  caseId      String
+  case        Case          @relation(fields: [caseId], references: [id])
+  direction   CallDirection
+  status      CallStatus    @default(INITIATED)
+  providerRef String? // Twilio Call SID
+  transcript  Json? // turn-by-turn, written to audit
+  recordingUrl String?
+  startedAt   DateTime      @default(now())
+  endedAt     DateTime?
+}
+
+// OTP session gating the web questionnaire (Track B issues, Track C redeems).
+model OtpSession {
+  id          String    @id @default(cuid())
+  caseId      String
+  case        Case      @relation(fields: [caseId], references: [id])
+  channel     String    @default("sms")
+  providerRef String? // Twilio Verify SID
+  verified    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+// ─────────────────────────── Audit (Track A, consumed by Track C) ───────────────────────────
+
+// Append-only audit trail. Every meaningful step writes one event so each case
+// has a complete, ordered, review-ready record.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  type      String // e.g. "CASE_CREATED", "IDV_PASSED", "SMS_SENT", "DECISION_MADE"
+  actor     String   @default("vera") // "vera" | "system" | reviewer id | "customer"
+  data      Json?
+  createdAt DateTime @default(now())
+}
