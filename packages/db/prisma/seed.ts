@@ -93,7 +93,28 @@ async function main() {
     ],
   });
 
-  console.log("✅ Seeded 3 demo cases: Alice (CLEAR), Bob (QUESTIONNAIRE_SENT), Carol (NEEDS_REVIEW)");
+  // 4) Dan — IDV passed, ready to dispatch the questionnaire (the live demo
+  //    starting point: channels /dispatch advances IDV_DONE -> QUESTIONNAIRE_SENT).
+  const dan = await prisma.entity.create({
+    data: { type: "PERSON", fullName: "Dan Dvorak", email: "dan@example.com", phone: "+15551230004", country: "CZ" },
+  });
+  const danCase = await prisma.case.create({
+    data: {
+      id: "case_demo_dan", // stable id — matches @trustline/shared fixtures
+      entityId: dan.id,
+      status: "IDV_DONE",
+      riskTier: "LOW",
+      idvChecks: { create: { status: "PASSED", documentType: "PASSPORT", livenessPass: true, documentExp: new Date("2031-03-01") } },
+    },
+  });
+  await prisma.auditEvent.createMany({
+    data: [
+      { caseId: danCase.id, type: "CASE_CREATED", actor: "system" },
+      { caseId: danCase.id, type: "IDV_PASSED", actor: "vera" },
+    ],
+  });
+
+  console.log("✅ Seeded 4 demo cases: Alice (CLEAR), Bob (QUESTIONNAIRE_SENT), Carol (NEEDS_REVIEW), Dan (IDV_DONE)");
 }
 
 main()

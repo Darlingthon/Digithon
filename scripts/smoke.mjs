@@ -17,8 +17,9 @@
 const WEB = (process.env.WEB_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const CHANNELS = (process.env.CHANNELS_URL ?? "http://localhost:4000").replace(/\/$/, "");
 const AGENT = (process.env.AGENT_URL ?? "http://localhost:8000").replace(/\/$/, "");
-const CASE = process.env.SMOKE_CASE ?? "case_demo_bob";
-const PHONE = process.env.SMOKE_PHONE ?? "+15551230002";
+// Dan is seeded in IDV_DONE — the legal state to dispatch the questionnaire.
+const CASE = process.env.SMOKE_CASE ?? "case_demo_dan";
+const PHONE = process.env.SMOKE_PHONE ?? "+15551230004";
 const READONLY = process.env.READONLY === "1";
 
 let pass = 0,
