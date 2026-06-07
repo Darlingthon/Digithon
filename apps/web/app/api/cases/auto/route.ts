@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { startCase, setQuestionnaireDelivery, setCaseLanguage, type RiskTier } from "@trustline/db";
 import { channelsUrl, channelsPost } from "@/lib/channels";
+import { getCurrentOrg } from "@/lib/session";
 
 // One form → a live case. BOTH modes start the same way: text the customer an
 // IDV link. The chosen channel only decides how the questionnaire is collected
@@ -12,6 +13,9 @@ import { channelsUrl, channelsPost } from "@/lib/channels";
 type Mode = "CALL" | "SMS";
 
 export async function POST(req: Request) {
+  const org = await getCurrentOrg();
+  if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = await req.json().catch(() => ({}));
   const name: string = (body.name ?? "").trim();
   const phone: string | undefined = body.phone?.trim() || undefined;
@@ -30,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const created = await startCase({ entityName: name, phone, email, riskTier: tier });
+    const created = await startCase({ entityName: name, orgId: org.id, phone, email, riskTier: tier });
     const caseId = created.id;
     await setQuestionnaireDelivery(caseId, mode);
     await setCaseLanguage(caseId, language);

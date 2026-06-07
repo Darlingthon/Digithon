@@ -3,7 +3,7 @@
 // e.g. the Python agent's TS-facing fixtures or the frontend, don't need the
 // Prisma client). Source of truth for the DB shape lives in @trustline/db.
 
-export * from "./questionnaire.js";
+export * from "./questionnaire";
 
 export type CaseStatus =
   | "CREATED"
