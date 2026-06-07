@@ -45,6 +45,58 @@ export interface CaseActions {
   decide(caseId: string): Promise<CaseSummary>;
 }
 
+// ─────────────────── Case detail (reviewer dashboard) ───────────────────
+
+export interface IdvCheckSummary {
+  id: string;
+  status: "PENDING" | "PASSED" | "FAILED";
+  provider: string;
+  providerRef?: string | null;
+  documentType?: string | null;
+  livenessPass?: boolean | null;
+  createdAt: string;
+}
+
+export interface ScreeningHit {
+  id: string;
+  type: "SANCTIONS" | "PEP" | "ADVERSE_MEDIA";
+  hit: boolean;
+  details?: Record<string, unknown> | null;
+}
+
+export interface QuestionnaireAnswerSummary {
+  channel: "WEB" | "VOICE";
+  answers: Record<string, unknown>;
+  complete: boolean;
+  createdAt: string;
+}
+
+export interface DecisionSummary {
+  outcome: DecisionOutcome;
+  reasons: string[];
+  automated: boolean;
+  reviewedBy?: string | null;
+  createdAt: string;
+}
+
+export interface AuditEventSummary {
+  id: string;
+  type: string;
+  actor: string;
+  data?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface CaseDetail extends CaseSummary {
+  email?: string | null;
+  phone?: string | null;
+  idvChecks: IdvCheckSummary[];
+  questionnaireResponses: QuestionnaireAnswerSummary[];
+  screeningResults: ScreeningHit[];
+  decision?: DecisionSummary | null;
+  auditEvents: AuditEventSummary[];
+}
+
 // ─────────────────── Metrics (Track A → Track C dashboard) ───────────────────
 
 export interface Metrics {
