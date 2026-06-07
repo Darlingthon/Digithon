@@ -30,6 +30,7 @@ export default function DashboardPage() {
               Review Queue ({needsReview})
             </Link>
           )}
+          <Link href="/new" style={{ background: "var(--brain)", color: "#fff", padding: "6px 14px", borderRadius: 8, fontSize: 13, textDecoration: "none", fontWeight: 700 }}>+ New case</Link>
           <Link href="/dashboard/metrics" style={{ color: "var(--brain)", fontSize: 13, textDecoration: "none", fontWeight: 600 }}>Live Metrics →</Link>
           <Link href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>← Home</Link>
         </div>

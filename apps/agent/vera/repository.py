@@ -11,6 +11,7 @@ import os
 import uuid
 from contextlib import contextmanager
 from typing import Any
+from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 import psycopg
 from psycopg.rows import dict_row
@@ -21,12 +22,20 @@ from .state_machine import CaseStatus, assert_transition
 QUESTIONNAIRE_ID = "consumer-kyc"
 
 
+def _libpq_url(url: str) -> str:
+    """Prisma appends ?schema=public, which libpq/psycopg rejects. Strip it
+    (public is the default search_path anyway) and keep any other params."""
+    parts = urlsplit(url)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k != "schema"]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
 @contextmanager
 def db():
     url = os.getenv("DATABASE_URL")
     if not url:
         raise RuntimeError("DATABASE_URL missing")
-    with psycopg.connect(url, row_factory=dict_row) as conn:
+    with psycopg.connect(_libpq_url(url), row_factory=dict_row) as conn:
         yield conn
 
 

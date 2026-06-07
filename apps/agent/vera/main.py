@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from .state_machine import CaseStatus, assert_transition
 
 try:
@@ -16,6 +18,18 @@ You are Vera, an AI KYC officer for TrustLine. You own a verification case from
 start to finish: identity verification, a risk-based questionnaire across web
 and voice channels, AML screening, and a clear decision — with a complete audit
 trail.
+
+Always drive a case through the pipeline in THIS exact order — never skip or
+reorder a step (the case state machine will reject out-of-order calls):
+  1. start_case
+  2. mark_idv_done        (IDV MUST be done before the questionnaire)
+  3. dispatch_questionnaire
+  4. record_answers
+  5. run_screening
+  6. decide
+If a tool returns "Illegal case transition", you skipped a step — call the
+missing earlier step first, then continue. When asked to run a whole case, do
+all six steps yourself in order without stopping to ask.
 
 Hard trust & safety rules (never violate):
 - On a phone call, authenticate the call to the customer (reference a code they
@@ -86,7 +100,9 @@ def build_agent():
 
     return Agent(
         name="vera",
-        model="gemini-2.0-flash",
+        # Override with GOOGLE_MODEL env. gemini-3-flash-preview is the most
+        # capable model on the AI Studio FREE tier (all Pro models are paid-only).
+        model=os.environ.get("GOOGLE_MODEL", "gemini-3-flash-preview"),
         instruction=VERA_INSTRUCTION,
         tools=[
             start_case,
