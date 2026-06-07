@@ -1,36 +1,15 @@
 import { NextResponse } from "next/server";
-import {
-  startCase,
-  markIdvDone,
-  dispatchQuestionnaire,
-  recordAnswers,
-  runScreening,
-  decide,
-} from "@trustline/db";
-import { questionsForTier, type RiskTier } from "@trustline/shared/questionnaire";
+import { startCase, setQuestionnaireDelivery, setCaseLanguage, type RiskTier } from "@trustline/db";
+import { channelsUrl, channelsPost } from "@/lib/channels";
 
-// Autopilot: fill in a name + phone and Vera runs the whole KYC case on her own —
-// the same six Brain actions, in the correct order, deterministically (no LLM
-// ordering slips, no rate limits). Returns the case + final decision.
+// One form → a live case. BOTH modes start the same way: text the customer an
+// IDV link. The chosen channel only decides how the questionnaire is collected
+// AFTER identity verification passes (handled by the post-idv action):
+//   - "CALL": Vera phones the customer right away.
+//   - "SMS":  text the questionnaire link; if not filled within the fallback
+//             window, the Channels sweep has Vera auto-call them.
 
-// Sensible default answers so the questionnaire completes unattended.
-function autoAnswers(tier: RiskTier): Record<string, unknown> {
-  const defaults: Record<string, unknown> = {
-    occupation: "Software Engineer",
-    annualIncomeBand: "50k-150k",
-    sourceOfFunds: "Salary",
-    isPep: false,
-    expectedMonthlyVolume: "10k-100k",
-    sourceOfWealthDetail: "Accumulated through salary and long-term savings.",
-    foreignAccounts: false,
-  };
-  const answers: Record<string, unknown> = {};
-  for (const q of questionsForTier(tier)) {
-    answers[q.field] =
-      defaults[q.field] ?? (q.type === "boolean" ? false : q.options ? q.options[0] : "N/A");
-  }
-  return answers;
-}
+type Mode = "CALL" | "SMS";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -38,18 +17,40 @@ export async function POST(req: Request) {
   const phone: string | undefined = body.phone?.trim() || undefined;
   const email: string | undefined = body.email?.trim() || undefined;
   const tier: RiskTier = (body.riskTier as RiskTier) ?? "LOW";
+  const mode: Mode = body.mode === "SMS" ? "SMS" : "CALL";
+  const language: string = typeof body.language === "string" && body.language ? body.language : "en";
+
   if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
+  if (!phone) return NextResponse.json({ error: "phone is required (E.164)" }, { status: 400 });
+  if (!channelsUrl()) {
+    return NextResponse.json(
+      { error: "CHANNELS_URL is not set — start the channels service and set CHANNELS_URL to go live" },
+      { status: 409 },
+    );
+  }
 
   try {
-    // 1. create → 2. IDV pass → 3. dispatch → 4. answers → 5. screen → 6. decide
     const created = await startCase({ entityName: name, phone, email, riskTier: tier });
     const caseId = created.id;
-    await markIdvDone(caseId, true, { source: "autopilot", note: "simulated IDV pass" });
-    await dispatchQuestionnaire(caseId);
-    await recordAnswers(caseId, "WEB", autoAnswers(tier));
-    await runScreening(caseId);
-    const decided = await decide(caseId);
-    return NextResponse.json({ caseId, ...decided });
+    await setQuestionnaireDelivery(caseId, mode);
+    await setCaseLanguage(caseId, language);
+
+    // First touch: a real SMS with the IDV link. The customer verifies identity,
+    // then the post-idv action collects the questionnaire over the chosen channel.
+    const invite = await channelsPost<{ link: string; smsSid: string }>(`/invite/${caseId}`, { phone });
+
+    return NextResponse.json({
+      caseId,
+      mode,
+      status: created.status,
+      entityName: name,
+      link: invite.link,
+      smsSid: invite.smsSid,
+      message:
+        mode === "CALL"
+          ? `IDV link sent. Once identity is verified, Vera will call ${phone} to run the questionnaire.`
+          : `IDV link sent. After identity is verified, we'll text the questionnaire — Vera auto-calls if it's not filled in time.`,
+    });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

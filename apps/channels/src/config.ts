@@ -24,13 +24,23 @@ export const config = {
   // Brain's CaseActions HTTP API; empty -> use in-memory mock (fixtures).
   brainUrl: process.env.BRAIN_URL ?? "",
 
+  // SMS-questionnaire fallback: if a texted questionnaire isn't filled within
+  // this window, Vera auto-calls the customer. Default 24h; set short to demo.
+  questionnaireFallbackMs: Number(process.env.QUESTIONNAIRE_FALLBACK_MS ?? 24 * 60 * 60 * 1000),
+  // How often the sweep checks for stalled questionnaires.
+  questionnaireSweepMs: Number(process.env.QUESTIONNAIRE_SWEEP_MS ?? 30_000),
+
   openai: {
     apiKey: process.env.OPENAI_API_KEY ?? "",
     // Vera's realtime speech model (per AGENTS.md).
     model: process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2",
     voice: process.env.OPENAI_REALTIME_VOICE ?? "marin",
     // Transcribe the CALLER's audio too, for a complete two-sided audit trail.
-    transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe",
+    // gpt-4o-transcribe (full) is markedly more accurate than -mini on low-bitrate
+    // 8kHz phone audio. Pin the language so it doesn't drift to e.g. German on an
+    // accented "uh-huh"; override OPENAI_TRANSCRIBE_LANGUAGE="" to auto-detect.
+    transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-transcribe",
+    transcribeLanguage: process.env.OPENAI_TRANSCRIBE_LANGUAGE ?? "en",
     // server_vad turn detection (lower latency than semantic_vad). Higher
     // threshold = less likely to false-trigger on phone echo.
     vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD ?? 0.6),

@@ -2,29 +2,37 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LANGUAGES } from "@trustline/shared/questionnaire";
+
+type Mode = "CALL" | "SMS";
 
 type Result = {
   caseId?: string;
+  mode?: Mode;
   status?: string;
-  outcome?: string | null;
-  reasons?: string[];
   entityName?: string;
+  link?: string;
+  smsSid?: string;
+  message?: string;
   error?: string;
 };
 
-const OUTCOME_COLOR: Record<string, string> = {
-  CLEAR: "#16a34a",
-  REFER: "#e3a008",
-  REJECT: "#dc2626",
-};
+const MODES: { key: Mode; label: string; blurb: string }[] = [
+  { key: "CALL", label: "Vera calls", blurb: "After IDV, Vera phones the customer and runs the questionnaire by voice." },
+  { key: "SMS", label: "SMS link", blurb: "After IDV, we text the questionnaire link — Vera auto-calls if it's not filled in time." },
+];
 
 export default function NewCasePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [riskTier, setRiskTier] = useState("LOW");
+  const [language, setLanguage] = useState("en");
+  const [mode, setMode] = useState<Mode>("CALL");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+
+  const canSubmit = !!name && !!phone;
 
   async function run(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +42,7 @@ export default function NewCasePage() {
       const res = await fetch("/api/cases/auto", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, phone, email, riskTier }),
+        body: JSON.stringify({ name, phone, email, riskTier, mode, language }),
       });
       setResult(await res.json());
     } catch (err) {
@@ -56,48 +64,86 @@ export default function NewCasePage() {
         <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>TRUSTLINE · VERA</p>
         <Link href="/dashboard" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>Dashboard →</Link>
       </div>
-      <h1 style={{ margin: "4px 0 6px", fontSize: 26, fontWeight: 700 }}>New verification — autopilot</h1>
+      <h1 style={{ margin: "4px 0 6px", fontSize: 26, fontWeight: 700 }}>New verification</h1>
       <p style={{ color: "var(--muted)", marginTop: 0, fontSize: 14 }}>
-        Enter a name and Vera runs the entire KYC case on her own — identity check,
-        questionnaire, AML screening, and a decision — with a full audit trail.
+        Vera texts the customer an identity-check link. Once they pass IDV, she collects
+        the questionnaire over the channel you pick — then screening and the decision run on their own.
       </p>
 
       <form onSubmit={run} className="card" style={{ display: "grid", gap: 16, marginTop: 20 }}>
+        <div>
+          <label style={label}>Collect the questionnaire by</label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {MODES.map((m) => {
+              const active = mode === m.key;
+              return (
+                <button
+                  type="button"
+                  key={m.key}
+                  onClick={() => setMode(m.key)}
+                  style={{
+                    padding: "10px 8px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    background: active ? "var(--brand)" : "var(--bg)",
+                    color: active ? "#fff" : "var(--text)",
+                    border: `1px solid ${active ? "var(--brand)" : "var(--border)"}`,
+                  }}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--muted)" }}>
+            {MODES.find((m) => m.key === mode)!.blurb}
+          </p>
+        </div>
+
         <div>
           <label style={label}>Full name *</label>
           <input style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ivan Petrov" required />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
-            <label style={label}>Phone</label>
-            <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+359…" />
+            <label style={label}>Phone *</label>
+            <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+359…" required />
           </div>
           <div>
             <label style={label}>Email</label>
             <input style={input} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ivan@example.com" />
           </div>
         </div>
-        <div>
-          <label style={label}>Risk tier</label>
-          <select style={input} value={riskTier} onChange={(e) => setRiskTier(e.target.value)}>
-            <option value="LOW">Low — short questionnaire, usually auto-cleared</option>
-            <option value="MEDIUM">Medium — adds PEP + volume questions</option>
-            <option value="HIGH">High — enhanced due diligence → human review</option>
-          </select>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div>
+            <label style={label}>Risk tier</label>
+            <select style={input} value={riskTier} onChange={(e) => setRiskTier(e.target.value)}>
+              <option value="LOW">Low — usually auto-cleared</option>
+              <option value="MEDIUM">Medium — PEP + volume</option>
+              <option value="HIGH">High — human review</option>
+            </select>
+          </div>
+          <div>
+            <label style={label}>Call language</label>
+            <select style={input} value={language} onChange={(e) => setLanguage(e.target.value)}>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <button
           type="submit"
-          disabled={running || !name}
+          disabled={running || !canSubmit}
           style={{
             padding: "12px 16px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 14,
-            cursor: running || !name ? "default" : "pointer",
-            background: running ? "var(--border)" : "var(--brain)", color: "#fff",
+            cursor: running || !canSubmit ? "default" : "pointer",
+            background: running ? "var(--border)" : "var(--brand)", color: "#fff",
           }}
         >
-          {running ? "Vera is working…" : "Run full case"}
+          {running ? "Sending IDV link…" : "Start verification"}
         </button>
         <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>
-          Tip: include “pep” in the name (e.g. “John Pep”) to watch it get escalated to the review queue.
+          A real SMS is sent to this number. For the link to open on the phone,
+          <code style={{ margin: "0 4px" }}>NEXT_PUBLIC_APP_URL</code> must be publicly reachable (ngrok).
         </p>
       </form>
 
@@ -108,22 +154,22 @@ export default function NewCasePage() {
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{
-                  background: OUTCOME_COLOR[result.outcome ?? ""] ?? "var(--border)", color: "#fff",
-                  padding: "4px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700,
-                }}>
-                  {result.outcome ?? result.status}
+                <span style={{ background: "var(--brand)", color: "#fff", padding: "4px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700 }}>
+                  ✉ IDV link sent
                 </span>
-                <span style={{ color: "var(--muted)", fontSize: 13 }}>{result.entityName} · {result.status}</span>
+                <span style={{ color: "var(--muted)", fontSize: 13 }}>{result.entityName} · {result.mode === "CALL" ? "Vera will call" : "SMS questionnaire"}</span>
               </div>
-              {result.reasons && (
-                <ul style={{ margin: "12px 0 0", paddingLeft: 18, color: "var(--text)", fontSize: 14 }}>
-                  {result.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
+              {result.message && <p style={{ margin: "12px 0 0", fontSize: 14 }}>{result.message}</p>}
+              {result.link && (
+                <p style={{ margin: "8px 0 0", fontSize: 13 }}>
+                  Or open the IDV step directly: <a href={result.link} style={{ color: "var(--brand)", fontWeight: 600 }}>{result.link}</a>
+                </p>
               )}
-              <Link href={`/dashboard/${result.caseId}`} style={{ display: "inline-block", marginTop: 14, color: "var(--brain)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
-                View case + audit trail →
-              </Link>
+              {result.caseId && (
+                <Link href={`/dashboard/${result.caseId}`} style={{ display: "inline-block", marginTop: 14, color: "var(--brand)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
+                  View case + audit trail →
+                </Link>
+              )}
             </>
           )}
         </div>

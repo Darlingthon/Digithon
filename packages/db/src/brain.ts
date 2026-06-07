@@ -341,6 +341,51 @@ export async function decide(caseId: string) {
   return toCaseSummary(updated);
 }
 
+// Remember how the questionnaire should be collected after IDV: "CALL" (Vera
+// phones immediately) or "SMS" (link texted, with a Vera auto-call fallback).
+export async function setQuestionnaireDelivery(caseId: string, channel: "CALL" | "SMS") {
+  await ensureCase(caseId);
+  await prisma.case.update({ where: { id: caseId }, data: { qDelivery: channel } });
+  return { caseId, qDelivery: channel };
+}
+
+// Language Vera speaks + transcribes on the call (ISO-639-1, e.g. "en", "bg").
+export async function setCaseLanguage(caseId: string, language: string) {
+  await ensureCase(caseId);
+  await prisma.case.update({ where: { id: caseId }, data: { language } });
+  return { caseId, language };
+}
+
+// SMS-mode cases that have been waiting for questionnaire answers longer than
+// `thresholdMs` and haven't been auto-called yet — the Channels sweep rings these.
+export async function dueForFallbackCall(thresholdMs: number) {
+  const cutoff = new Date(Date.now() - thresholdMs);
+  const cases = await prisma.case.findMany({
+    where: {
+      status: CaseStatus.QUESTIONNAIRE_SENT,
+      qDelivery: "SMS",
+      updatedAt: { lt: cutoff },
+      entity: { phone: { not: null } },
+      auditEvents: { none: { type: "FALLBACK_CALL_PLACED" } },
+    },
+    include: { entity: true },
+  });
+  return cases.map((c) => ({ caseId: c.id, phone: c.entity.phone as string }));
+}
+
+// Record that the Vera auto-call has been placed, so the sweep doesn't ring twice.
+export async function markFallbackCallPlaced(caseId: string, providerRef?: string) {
+  return appendAudit(caseId, "FALLBACK_CALL_PLACED", "vera", { providerRef });
+}
+
+// Run the back half of the pipeline (AML screening → decision) once the
+// customer's answers are in. Live channels (web self-serve, Vera voice) call
+// this so a case finishes on its own instead of stalling at QUESTIONNAIRE_DONE.
+export async function finalizeCase(caseId: string) {
+  await runScreening(caseId);
+  return decide(caseId);
+}
+
 export async function getMetrics() {
   const cases = await prisma.case.findMany({
     include: {

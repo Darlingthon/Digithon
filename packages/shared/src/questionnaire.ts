@@ -7,6 +7,23 @@
 
 export type RiskTier = "LOW" | "MEDIUM" | "HIGH";
 
+// Languages Vera can speak/transcribe on a call. `code` is ISO-639-1 (used for
+// the realtime transcription `language` param); `name` is what we tell Vera to
+// speak. Kept here (not index) so it's importable via the subpath in Next
+// client components without tripping the index.ts re-export.
+export const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "bg", name: "Bulgarian" },
+  { code: "de", name: "German" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "it", name: "Italian" },
+] as const;
+export type LanguageCode = (typeof LANGUAGES)[number]["code"];
+export function languageName(code?: string | null): string {
+  return LANGUAGES.find((l) => l.code === code)?.name ?? "English";
+}
+
 export type QuestionType = "text" | "boolean" | "single_select" | "number";
 
 export interface Question {
