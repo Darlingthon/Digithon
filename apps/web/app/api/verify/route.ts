@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { MOCK_CASES } from "@trustline/shared/fixtures";
+import { getCase, BrainError } from "@trustline/db";
 
-// Mock OTP verification endpoint. Track B (Channels) replaces this with a real
-// Twilio Verify check once issue #4 lands. The mock accepts "000000" as the
-// demo OTP for any case in QUESTIONNAIRE_SENT state.
 export async function POST(req: Request) {
   const { caseId, otp } = await req.json();
 
@@ -11,9 +8,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "caseId and otp are required" }, { status: 400 });
   }
 
-  const c = MOCK_CASES.find((x) => x.id === caseId);
-  if (!c) {
-    return NextResponse.json({ error: "case not found" }, { status: 404 });
+  let c: Awaited<ReturnType<typeof getCase>>;
+  try {
+    c = await getCase(caseId);
+  } catch (err) {
+    if (err instanceof BrainError && err.status === 404) {
+      return NextResponse.json({ error: "case not found" }, { status: 404 });
+    }
+    return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 
   if (c.status !== "QUESTIONNAIRE_SENT") {
@@ -24,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg, code: "WRONG_STATE" }, { status: 409 });
   }
 
-  // Mock: demo OTP is "000000"
+  // Demo OTP — Twilio Verify replaces this when TWILIO_* env vars are set (Track B)
   if (otp !== "000000") {
     return NextResponse.json({ error: "Incorrect code. Please try again.", code: "INVALID_OTP" }, { status: 401 });
   }

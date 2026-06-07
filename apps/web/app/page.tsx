@@ -1,18 +1,32 @@
 import Link from "next/link";
-import { MOCK_METRICS } from "@trustline/shared/fixtures";
+import { getMetrics } from "@trustline/db";
+import type { Metrics } from "@trustline/shared";
 
-// Foundation landing page. Confirms the scaffold boots and the shared package
-// resolves. Track C replaces this with the real dashboard (issue #7).
-export default function Home() {
-  const m = MOCK_METRICS;
+export default async function Home() {
+  let m: Metrics;
+  try {
+    m = await getMetrics();
+  } catch {
+    m = {
+      avgTimeToDecisionMins: 0,
+      manualBaselineDays: 5,
+      completionRate: 0,
+      abandonmentRescueRate: 0,
+      costPerVerificationUsd: 0.9,
+      manualCostBenchmarkUsd: [13, 130],
+      straightThroughRate: 0,
+      auditCompleteness: 0,
+      totalCases: 0,
+    };
+  }
+
   return (
     <main className="container">
       <p className="muted" style={{ letterSpacing: 2, fontSize: 12 }}>TRUSTLINE · VERA</p>
       <h1 style={{ fontSize: 40, margin: "8px 0 4px" }}>An AI employee that runs KYC end-to-end.</h1>
       <p className="muted" style={{ maxWidth: 560 }}>
-        Foundation scaffold is live. The data model, case state machine, shared
-        questionnaire, and mock API are ready — the three tracks can build in
-        parallel from here.
+        Vera handles identity verification, questionnaires, AML screening, and decisioning
+        — automatically, end-to-end.
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, margin: "28px 0" }}>
@@ -31,7 +45,7 @@ export default function Home() {
         <Link href="/dashboard" style={{ background: "#1d76db", color: "#fff", padding: "10px 20px", borderRadius: 8, textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
           Open Reviewer Dashboard →
         </Link>
-        <span className="muted" style={{ fontSize: 13 }}>Mock API: <code>/api/cases</code> · <code>/api/metrics</code></span>
+        <span className="muted" style={{ fontSize: 13 }}>{m.totalCases} case{m.totalCases !== 1 ? "s" : ""} in system</span>
       </div>
     </main>
   );
