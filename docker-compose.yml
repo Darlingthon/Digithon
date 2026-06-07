@@ -1,6 +1,13 @@
-# Default (lightweight):   docker compose up -d postgres
-# Full stack (3-person integration test):  docker compose --profile full up --build
-#   → postgres + migrate/seed + web (:3000) + channels (:4000), then `npm run smoke`.
+# TrustLine — one compose for the whole stack.
+#
+#   cp .env.example .env   # fill in secrets first
+#
+#   docker compose up -d postgres          # just the database (for `npm run dev`)
+#   docker compose up --build              # the FULL stack: db + migrate + web + channels + agent
+#   docker compose --profile tunnel up -d cloudflared   # + named cloudflared tunnel
+#
+# Apps read secrets from .env via `env_file`; compose-network specifics
+# (DATABASE_URL host, CHANNELS_URL) are overridden per-service below.
 services:
   postgres:
     image: postgres:16
@@ -22,7 +29,6 @@ services:
 
   # One-shot: apply migrations + seed demo cases, then exit.
   migrate:
-    profiles: ["full"]
     build:
       context: .
       dockerfile: apps/channels/Dockerfile
@@ -34,34 +40,66 @@ services:
         condition: service_healthy
 
   web:
-    profiles: ["full"]
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # web → channels over the compose network (not localhost).
+      CHANNELS_URL: http://channels:8080
     depends_on:
       migrate:
         condition: service_completed_successfully
 
   channels:
-    profiles: ["full"]
     build:
       context: .
       dockerfile: apps/channels/Dockerfile
+    restart: unless-stopped
     ports:
-      - "4000:8080" # host 4000 → container PORT 8080 (smoke harness default)
+      - "4000:8080" # host 4000 → container PORT 8080
+    env_file: [.env]
     environment:
       PORT: "8080"
       DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-      CHANNELS_SKIP_SIG: "1" # dry-run: no Twilio creds to validate signatures with
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+  agent:
+    build:
+      context: ./apps/agent
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: [.env]
+    environment:
+      PORT: "8000"
+      DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Cloudflare *named* tunnel → stable public URLs for web + channels.
+  # Token mode: the tunnel + its public hostnames are configured in the Cloudflare
+  # Zero Trust dashboard; set CLOUDFLARE_TUNNEL_TOKEN in .env, then:
+  #   docker compose --profile tunnel up -d cloudflared
+  # In the dashboard, point the public hostnames' service at:
+  #   trustline.morzio.com -> HTTP host.docker.internal:3000
+  #   channels.morzio.com  -> HTTP host.docker.internal:4000
+  # (host.docker.internal lets the connector reach the apps published on the host.)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   trustline_pgdata:
