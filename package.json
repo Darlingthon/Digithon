@@ -5,7 +5,8 @@
   "description": "TrustLine — an AI employee (Vera) that runs KYC end-to-end",
   "workspaces": [
     "packages/*",
-    "apps/web"
+    "apps/web",
+    "apps/channels"
   ],
   "scripts": {
     "dev": "dotenv -e .env -- npm run dev --workspace apps/web",
@@ -18,7 +19,8 @@
     "db:seed": "npm run seed --workspace @trustline/db",
     "db:reset": "npm run reset --workspace @trustline/db",
     "bootstrap": "npm install && npm run db:up && npm run db:generate && npm run db:migrate && npm run db:seed",
-    "agent:dev": "cd apps/agent && python3 -m vera.main"
+    "agent:dev": "cd apps/agent && python3 -m vera.main",
+    "channels:dev": "npm run dev --workspace @trustline/channels"
   },
   "engines": {
     "node": ">=20"
