@@ -192,3 +192,12 @@ Load these when working in code that uses the `assistant-ui` library (chat UI, r
 
 - Always invoke skills via the `skill` tool — do not paraphrase or guess their contents.
 - Skills compose, but in hackathon mode load only what directly accelerates the current task.
+
+## Skill Operating Stack
+
+- **GCP / ADK first:** use Google Agents CLI workflow/scaffold/adk-code/deploy/observability for Vera's backend, Cloud Run deployment, secrets, logs, and production-scale agent operations. Cloud Run is the default target; GKE is later only if needed.
+- **OpenAI source of truth:** use `openai-docs` before changing `gpt-realtime-2`, Realtime API, speech, tool-calling, session, SIP/WebRTC/WebSocket, or pricing behavior. Vera's voice model is `gpt-realtime-2`.
+- **Twilio source of truth:** use official Twilio skills for Conversation Relay, webhook architecture, and SMS. Voice calls must preserve the trust rules above: authenticate the call, disclose recording, and never ask for secrets by voice.
+- **assistant-ui stack:** use assistant-ui skills for reviewer dashboards, chat/case UI, tool rendering, thread/case views, runtime wiring, streaming, persistence, auth, and upgrade work.
+- **Persistence:** use Prisma skills for Cloud SQL/Postgres schema, migrations, and Prisma CLI usage.
+- **Skill hygiene:** prefer official or high-reputation skills. Do not install random compliance, KYC, Sumsub, or security skills without review; use official vendor docs/API references for Sumsub.

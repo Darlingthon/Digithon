@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "skills": {
+    "assistant-ui": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/assistant-ui/SKILL.md",
+      "computedHash": "5e342f1cae9193afe989d2244b73f5e1074951adc8cf7014119cedac88747a53"
+    },
+    "cloud": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/cloud/SKILL.md",
+      "computedHash": "ba88573ec94e2353346e657a4f62966e572c1f1ac840d68491e53d3398d2e641"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
+    },
+    "google-agents-cli-adk-code": {
+      "source": "google/agents-cli",
+      "sourceType": "github",
+      "skillPath": "skills/google-agents-cli-adk-code/SKILL.md",
+      "computedHash": "e8d4ef5bba6758006e91b7bc86ea358a6b385bd91bca7fbdffde120732e53234"
+    },
+    "google-agents-cli-deploy": {
+      "source": "google/agents-cli",
+      "sourceType": "github",
+      "skillPath": "skills/google-agents-cli-deploy/SKILL.md",
+      "computedHash": "db44621415daf9da589bdd43f207f901498affd953ca3188b401c6a910443cd0"
+    },
+    "google-agents-cli-observability": {
+      "source": "google/agents-cli",
+      "sourceType": "github",
+      "skillPath": "skills/google-agents-cli-observability/SKILL.md",
+      "computedHash": "ee566b09f0440a941dd33d61a95d691894fe63c0bbcb408b98fa6fc73baba13e"
+    },
+    "google-agents-cli-scaffold": {
+      "source": "google/agents-cli",
+      "sourceType": "github",
+      "skillPath": "skills/google-agents-cli-scaffold/SKILL.md",
+      "computedHash": "b8d9fa719f14f718a87b8df3a7a87cdf8067bc18b12cae3c8d64ceb5a6ca7079"
+    },
+    "google-agents-cli-workflow": {
+      "source": "google/agents-cli",
+      "sourceType": "github",
+      "skillPath": "skills/google-agents-cli-workflow/SKILL.md",
+      "computedHash": "5f502dffa56c918b98e5ea74c5f947a37f26f20368bd47909182ec53ef3f2b90"
+    },
+    "openai-docs": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/openai-docs/SKILL.md",
+      "computedHash": "22df00be935748ce5f8cce0604fefe89a7dda2c5221d58e627529d9f53a385b8"
+    },
+    "primitives": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/primitives/SKILL.md",
+      "computedHash": "a05fe573e66f672bcac4fa101e1a08ea78b8e4478a54fe61f1bcb3957677b6e7"
+    },
+    "prisma-cli": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "skillPath": "prisma-cli/SKILL.md",
+      "computedHash": "b9d9314e3716af725997843c5026ba0e258fb2d27a986190bf2ad53be67b72b9"
+    },
+    "prisma-database-setup": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "skillPath": "prisma-database-setup/SKILL.md",
+      "computedHash": "46d2dc2f9c968722376bbb6a1a1389c82bd7cceb5973ac1486c54890514b8959"
+    },
+    "runtime": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/runtime/SKILL.md",
+      "computedHash": "6c5e6ab03191384f10e91c546806d4f18329fcefeabe9197a7be64c4b9dc513e"
+    },
+    "setup": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/setup/SKILL.md",
+      "computedHash": "4613a1ba6ba0bd46ed0790e7e3e3b108773abfd7b988014f97643146d337a1d8"
+    },
+    "streaming": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/streaming/SKILL.md",
+      "computedHash": "20221d04867a93cdf254a74d9275f5d758b84607f214c3a8eb326520de7521b8"
+    },
+    "thread-list": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/thread-list/SKILL.md",
+      "computedHash": "516095f7f33d3662ca8964e9ea4b276df7fe63af0d00a21aba144221af352b9c"
+    },
+    "tools": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/tools/SKILL.md",
+      "computedHash": "2236be8f55e7938cd1176e5cb33a0654c655dee9037f31a9f95c09a2d2dbc046"
+    },
+    "twilio-sms-send-message": {
+      "source": "twilio/ai",
+      "sourceType": "github",
+      "skillPath": "skills/twilio/twilio-sms-send-message/SKILL.md",
+      "computedHash": "76f9ce09b8efe84ee762d81dc936a96f6ce2e277f49554b971efebbcc94bfd8a"
+    },
+    "twilio-voice-conversation-relay": {
+      "source": "twilio/ai",
+      "sourceType": "github",
+      "skillPath": "skills/twilio/twilio-voice-conversation-relay/SKILL.md",
+      "computedHash": "e21c815a3f93a4b0eeccaef3351762e8de548cd27394635c9d5984d467e0eb24"
+    },
+    "twilio-webhook-architecture": {
+      "source": "twilio/ai",
+      "sourceType": "github",
+      "skillPath": "skills/twilio/twilio-webhook-architecture/SKILL.md",
+      "computedHash": "552caace9670451c413491e58abdeb8abea83f0f34514dfa781e14084a0793dc"
+    },
+    "update": {
+      "source": "assistant-ui/skills",
+      "sourceType": "github",
+      "skillPath": "assistant-ui/skills/update/SKILL.md",
+      "computedHash": "09377b82f0d459363421569315cb9a9a85c59998cec1387012e82a14c46ab73f"
+    }
+  }
+}
