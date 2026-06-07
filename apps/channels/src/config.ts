@@ -23,7 +23,18 @@ export const config = {
 
   // Brain's CaseActions HTTP API; empty -> use in-memory mock (fixtures).
   brainUrl: process.env.BRAIN_URL ?? "",
+
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY ?? "",
+    // Vera's realtime speech model (per AGENTS.md).
+    model: process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2",
+    voice: process.env.OPENAI_REALTIME_VOICE ?? "marin",
+  },
 };
+
+// True when the OpenAI Realtime bridge can run (voice #5). Without a key the
+// /voice route still discloses + exits gracefully (no live bridge).
+export const hasOpenAI = Boolean(config.openai.apiKey);
 
 // True when real Twilio creds are present. Without them we run in DRY-RUN:
 // log what we'd send instead of hitting Twilio, so the flow is demoable offline.

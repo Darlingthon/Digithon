@@ -37,6 +37,21 @@ export async function startOtp(to: string): Promise<{ sid: string }> {
   return { sid: v.sid };
 }
 
+/** Place an outbound call; Twilio fetches TwiML from `twimlUrl` when answered. */
+export async function startCall(to: string, twimlUrl: string): Promise<{ sid: string }> {
+  if (!hasTwilio) {
+    console.log(`📞 [dry-run] outbound call → ${to}\n   TwiML: ${twimlUrl}`);
+    return { sid: `CA_dryrun_${Date.now()}` };
+  }
+  const call = await getClient().calls.create({
+    to,
+    from: config.twilio.fromNumber,
+    url: twimlUrl,
+    ...(config.publicUrl ? { statusCallback: `${config.publicUrl}/webhooks/call-status` } : {}),
+  });
+  return { sid: call.sid };
+}
+
 /** Check a Verify OTP code. Dry-run accepts "123456". */
 export async function checkOtp(to: string, code: string): Promise<boolean> {
   if (!hasTwilio || !config.twilio.verifyServiceSid) {
