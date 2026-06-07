@@ -23,6 +23,7 @@ async function main() {
   });
   const aliceCase = await prisma.case.create({
     data: {
+      id: "case_demo_alice", // stable id — matches @trustline/shared fixtures
       entityId: alice.id,
       status: "DECIDED",
       riskTier: "LOW",
@@ -49,6 +50,7 @@ async function main() {
   });
   const bobCase = await prisma.case.create({
     data: {
+      id: "case_demo_bob", // stable id — matches @trustline/shared fixtures
       entityId: bob.id,
       status: "QUESTIONNAIRE_SENT",
       riskTier: "MEDIUM",
@@ -70,6 +72,7 @@ async function main() {
   });
   const carolCase = await prisma.case.create({
     data: {
+      id: "case_demo_carol", // stable id — matches @trustline/shared fixtures
       entityId: carol.id,
       status: "NEEDS_REVIEW",
       riskTier: "HIGH",

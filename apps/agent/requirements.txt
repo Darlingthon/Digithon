@@ -1,0 +1,6 @@
+# Cloud Run runtime deps for the Vera agent (Track A).
+google-adk>=0.1.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-dotenv>=1.0.1
+psycopg[binary]>=3.2.0
