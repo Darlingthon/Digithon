@@ -1,10 +1,14 @@
 import { BrainError, getCase } from "@trustline/db";
 import { NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
 
 export async function GET(_request: Request, context: { params: Promise<{ caseId: string }> }) {
   try {
     const { caseId } = await context.params;
-    return NextResponse.json({ case: await getCase(caseId) });
+    // customer-facing routes (questionnaire page) call this without auth — allow it
+    const session = await getSession();
+    const orgId = session?.orgId ?? undefined;
+    return NextResponse.json({ case: await getCase(caseId, orgId) });
   } catch (error) {
     return toError(error);
   }

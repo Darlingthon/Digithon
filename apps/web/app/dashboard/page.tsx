@@ -4,11 +4,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CaseSummary, CaseStatus, DecisionOutcome, RiskTierName } from "@trustline/shared";
 
+interface MeInfo { email: string; firstName?: string | null; orgName?: string | null }
+
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
+  const [me, setMe] = useState<MeInfo | null>(null);
 
+  // Who's signed in (org + user) — fetched once.
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => d.user && setMe({ ...d.user, orgName: d.orgName }));
+  }, []);
+
+  // Cases, with live auto-refresh for the demo (pauseable).
   useEffect(() => {
     let active = true;
     const load = () =>
@@ -70,9 +81,21 @@ export default function DashboardPage() {
             </Link>
           )}
           <Link href="/new" style={{ background: "var(--brand)", color: "#fff", padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 700 }}>+ New case</Link>
-          <Link href="/dashboard/metrics" style={{ fontSize: 13, color: "var(--muted)" }}>
-            Metrics →
+          <Link href="/dashboard/questionnaires" style={{ fontSize: 13, color: "var(--muted)" }}>
+            Questionnaires
           </Link>
+          <Link href="/dashboard/metrics" style={{ fontSize: 13, color: "var(--muted)" }}>
+            Metrics
+          </Link>
+          {me && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingLeft: 8, borderLeft: "1px solid var(--border)" }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{me.firstName ?? me.email}</div>
+                {me.orgName && <div style={{ fontSize: 11, color: "var(--muted)" }}>{me.orgName}</div>}
+              </div>
+              <a href="/auth/signout" style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}>Sign out</a>
+            </div>
+          )}
         </div>
       </div>
 

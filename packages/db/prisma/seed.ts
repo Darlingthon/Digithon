@@ -2,11 +2,12 @@
 // data to build against. Idempotent-ish: wipes and re-creates demo rows.
 
 import { PrismaClient } from "@prisma/client";
+import { getOrCreateOrg } from "../src/org";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // clean (order matters for FKs)
+  // clean (order matters for FKs — children before parents, org last)
   await prisma.auditEvent.deleteMany();
   await prisma.decision.deleteMany();
   await prisma.screeningResult.deleteMany();
@@ -16,6 +17,15 @@ async function main() {
   await prisma.otpSession.deleteMany();
   await prisma.case.deleteMany();
   await prisma.entity.deleteMany();
+  await prisma.questionnaire.deleteMany();
+  await prisma.member.deleteMany();
+  await prisma.organisation.deleteMany();
+
+  // Demo tenant. Cases now belong to an Organisation (multi-tenant), so the
+  // seed provisions one demo org (with its questionnaire templates) and attaches
+  // every demo case to it. Log in under this org's WorkOS id to see the data.
+  const org = await getOrCreateOrg("demo-org", "TrustLine Demo");
+  const orgId = org.id;
 
   // 1) Alice — clean, fully decided (the happy path)
   const alice = await prisma.entity.create({
@@ -24,6 +34,7 @@ async function main() {
   const aliceCase = await prisma.case.create({
     data: {
       id: "case_demo_alice", // stable id — matches @trustline/shared fixtures
+      orgId,
       entityId: alice.id,
       status: "DECIDED",
       riskTier: "LOW",
@@ -51,6 +62,7 @@ async function main() {
   const bobCase = await prisma.case.create({
     data: {
       id: "case_demo_bob", // stable id — matches @trustline/shared fixtures
+      orgId,
       entityId: bob.id,
       status: "QUESTIONNAIRE_SENT",
       riskTier: "MEDIUM",
@@ -73,6 +85,7 @@ async function main() {
   const carolCase = await prisma.case.create({
     data: {
       id: "case_demo_carol", // stable id — matches @trustline/shared fixtures
+      orgId,
       entityId: carol.id,
       status: "NEEDS_REVIEW",
       riskTier: "HIGH",
@@ -101,6 +114,7 @@ async function main() {
   const danCase = await prisma.case.create({
     data: {
       id: "case_demo_dan", // stable id — matches @trustline/shared fixtures
+      orgId,
       entityId: dan.id,
       status: "IDV_DONE",
       riskTier: "LOW",

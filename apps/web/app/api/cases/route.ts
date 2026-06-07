@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { BrainError, listCases, startCase } from "@trustline/db";
+import { BrainError, listCases, startCase, getOrCreateMember } from "@trustline/db";
+import { getSession, getCurrentOrg } from "@/lib/session";
 
 export async function GET() {
   try {
-    return NextResponse.json({ cases: await listCases() });
+    const org = await getCurrentOrg();
+    if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ cases: await listCases(org.id) });
   } catch (error) {
     return toError(error);
   }
@@ -11,9 +14,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const org = await getCurrentOrg();
+    if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    await getOrCreateMember(session.userId, session.email, org.id);
+
     const body = await request.json();
     const kase = await startCase({
       entityName: body.entityName,
+      orgId: org.id,
       phone: body.phone,
       email: body.email,
       country: body.country,
