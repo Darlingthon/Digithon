@@ -119,7 +119,7 @@ export default function MetricsPage() {
                   label="Straight-through rate"
                   before="~30%"
                   after={`${Math.round(metrics.straightThroughRate * 100)}%`}
-                  delta={`+${Math.round((metrics.straightThroughRate - 0.3) * 100)}pp`}
+                  delta={`${Math.round((metrics.straightThroughRate - 0.3) * 100) >= 0 ? "+" : ""}${Math.round((metrics.straightThroughRate - 0.3) * 100)}pp`}
                   last
                 />
               </tbody>

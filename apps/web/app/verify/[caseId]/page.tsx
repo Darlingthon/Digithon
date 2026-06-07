@@ -15,7 +15,7 @@ export default function VerifyPage() {
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Determine case state up-front for early redirect messaging
-  const c = MOCK_CASES.find((x) => x.id === caseId);
+  const c = caseId ? MOCK_CASES.find((x) => x.id === caseId) : undefined;
   const wrongState = c && c.status !== "QUESTIONNAIRE_SENT";
   const notFound = !c;
 
