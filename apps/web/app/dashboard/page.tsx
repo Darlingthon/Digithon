@@ -41,7 +41,7 @@ export default function DashboardPage() {
                 <td style={tdStyle}><span style={{ fontWeight: 600 }}>{c.entityName}</span></td>
                 <td style={tdStyle}><StatusBadge status={c.status} /></td>
                 <td style={tdStyle}><RiskBadge tier={c.riskTier} /></td>
-                <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{c.reason.replace("_", " ")}</span></td>
+                <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{c.reason.replace(/_/g, " ")}</span></td>
                 <td style={tdStyle}><span style={{ color: "var(--muted)", fontSize: 12 }}>{fmtDate(c.createdAt)}</span></td>
                 <td style={tdStyle}>{c.outcome ? <OutcomeBadge outcome={c.outcome} /> : <span style={{ color: "var(--muted)" }}>—</span>}</td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>

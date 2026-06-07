@@ -12,8 +12,8 @@ import type {
 
 export default async function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c: CaseDetail | undefined = MOCK_CASE_DETAILS.find((x) => x.id === id);
-  if (!c) notFound();
+  const c = MOCK_CASE_DETAILS.find((x) => x.id === id);
+  if (!c) return notFound();
 
   const timeMins = c.decidedAt
     ? Math.round((new Date(c.decidedAt).getTime() - new Date(c.createdAt).getTime()) / 60000)
@@ -31,7 +31,7 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ id:
               <StatusBadge status={c.status} />
               <RiskBadge tier={c.riskTier} />
               {c.outcome && <OutcomeBadge outcome={c.outcome} />}
-              <span style={{ color: "var(--muted)", fontSize: 12, alignSelf: "center" }}>{c.reason.replace("_", " ")}</span>
+              <span style={{ color: "var(--muted)", fontSize: 12, alignSelf: "center" }}>{c.reason.replace(/_/g, " ")}</span>
             </div>
           </div>
           {timeMins !== null && (
