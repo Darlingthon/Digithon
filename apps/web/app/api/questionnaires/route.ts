@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma, getOrCreateOrg } from "@trustline/db";
-import { getSession } from "@/lib/session";
-import { withAuth } from "@workos-inc/authkit-nextjs";
+import { prisma } from "@trustline/db";
+import { getCurrentOrg } from "@/lib/session";
 import type { RiskTier as PrismaRiskTier } from "@prisma/client";
 
-async function resolveOrg() {
-  const session = await getSession();
-  if (!session?.orgId) return null;
-  const auth = await withAuth();
-  return getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
-}
-
 export async function GET() {
-  const org = await resolveOrg();
+  const org = await getCurrentOrg();
   if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const questionnaires = await prisma.questionnaire.findMany({
@@ -23,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const org = await resolveOrg();
+  const org = await getCurrentOrg();
   if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();

@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { getMetrics } from "@trustline/db";
-import { getSession } from "@/lib/session";
-import { getOrCreateOrg } from "@trustline/db";
-import { withAuth } from "@workos-inc/authkit-nextjs";
+import { getCurrentOrg } from "@/lib/session";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (session?.orgId) {
-      const auth = await withAuth();
-      const org = await getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
+    const org = await getCurrentOrg();
+    if (org) {
       return NextResponse.json(await getMetrics(org.id));
     }
     return NextResponse.json(await getMetrics());

@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma, getOrCreateOrg } from "@trustline/db";
-import { getSession } from "@/lib/session";
-import { withAuth } from "@workos-inc/authkit-nextjs";
-
-async function resolveOrg() {
-  const session = await getSession();
-  if (!session?.orgId) return null;
-  const auth = await withAuth();
-  return getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
-}
+import { prisma } from "@trustline/db";
+import { getCurrentOrg } from "@/lib/session";
 
 export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
-  const org = await resolveOrg();
+  const org = await getCurrentOrg();
   if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
@@ -21,7 +13,7 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
-  const org = await resolveOrg();
+  const org = await getCurrentOrg();
   if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;
@@ -44,7 +36,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 }
 
 export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
-  const org = await resolveOrg();
+  const org = await getCurrentOrg();
   if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;

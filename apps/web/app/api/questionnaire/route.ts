@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@trustline/db";
-import { getSession } from "@/lib/session";
-import { getOrCreateOrg } from "@trustline/db";
-import { withAuth } from "@workos-inc/authkit-nextjs";
+import { getCurrentOrg } from "@/lib/session";
 import { QUESTIONNAIRE, questionsForTier, type RiskTier } from "@trustline/shared/questionnaire";
 
 export async function GET(request: Request) {
@@ -10,10 +8,8 @@ export async function GET(request: Request) {
   const riskTier = (["LOW", "MEDIUM", "HIGH"].includes(tier) ? tier : "LOW") as RiskTier;
 
   try {
-    const session = await getSession();
-    if (session?.orgId) {
-      const auth = await withAuth();
-      const org = await getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
+    const org = await getCurrentOrg();
+    if (org) {
       const q = await prisma.questionnaire.findFirst({
         where: { orgId: org.id, riskTier, isActive: true },
         orderBy: { version: "desc" },

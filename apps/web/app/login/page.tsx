@@ -1,8 +1,4 @@
-import { getSignInUrl } from "@workos-inc/authkit-nextjs";
-
-export default async function LoginPage() {
-  const signInUrl = await getSignInUrl();
-
+export default function LoginPage() {
   return (
     <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
       <div style={{ padding: "20px 32px", borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
@@ -20,7 +16,7 @@ export default async function LoginPage() {
 
           <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "32px 28px" }}>
             <a
-              href={signInUrl}
+              href="/auth/login"
               style={{
                 display: "block", width: "100%", padding: "13px 0",
                 background: "var(--brand)", color: "#fff",
@@ -34,7 +30,7 @@ export default async function LoginPage() {
 
           <p style={{ marginTop: 20, fontSize: 12, color: "var(--subtle)" }}>
             New organisation?{" "}
-            <a href={signInUrl} style={{ color: "var(--brand)", textDecoration: "none" }}>Create an account</a>
+            <a href="/auth/login?intent=sign-up" style={{ color: "var(--brand)", textDecoration: "none" }}>Create an account</a>
           </p>
         </div>
       </div>

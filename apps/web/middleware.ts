@@ -7,7 +7,9 @@ export default authkitMiddleware({
     unauthenticatedPaths: [
       "/",
       "/login",
+      "/auth/login",
       "/auth/callback",
+      "/api/me",
       "/idv/:path*",
       "/verify/:path*",
       "/questionnaire/:path*",

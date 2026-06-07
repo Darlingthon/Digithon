@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@workos-inc/authkit-nextjs";
-import { getOrCreateOrg } from "@trustline/db";
+import { getCurrentOrg } from "@/lib/session";
 
 export async function GET() {
   try {
@@ -8,13 +8,11 @@ export async function GET() {
     if (!auth.user) return NextResponse.json({ user: null });
 
     let orgName: string | null = null;
-    if (auth.organizationId) {
-      try {
-        const org = await getOrCreateOrg(auth.organizationId, auth.user.firstName ?? "My Org");
-        orgName = org.name;
-      } catch {
-        // org provisioning failed — non-fatal
-      }
+    try {
+      const org = await getCurrentOrg();
+      orgName = org?.name ?? null;
+    } catch {
+      // org provisioning failed — non-fatal
     }
 
     return NextResponse.json({

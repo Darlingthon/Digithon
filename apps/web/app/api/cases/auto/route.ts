@@ -6,11 +6,9 @@ import {
   recordAnswers,
   runScreening,
   decide,
-  getOrCreateOrg,
 } from "@trustline/db";
 import { questionsForTier, type RiskTier } from "@trustline/shared/questionnaire";
-import { getSession } from "@/lib/session";
-import { withAuth } from "@workos-inc/authkit-nextjs";
+import { getCurrentOrg } from "@/lib/session";
 
 // Autopilot: fill in a name + phone and Vera runs the whole KYC case on her own —
 // the same six Brain actions, in the correct order, deterministically (no LLM
@@ -35,12 +33,8 @@ function autoAnswers(tier: RiskTier): Record<string, unknown> {
 }
 
 export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!session.orgId) return NextResponse.json({ error: "No organisation" }, { status: 403 });
-
-  const auth = await withAuth();
-  const org = await getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
+  const org = await getCurrentOrg();
+  if (!org) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const name: string = (body.name ?? "").trim();
