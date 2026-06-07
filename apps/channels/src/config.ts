@@ -29,6 +29,16 @@ export const config = {
     // Vera's realtime speech model (per AGENTS.md).
     model: process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2",
     voice: process.env.OPENAI_REALTIME_VOICE ?? "marin",
+    // Transcribe the CALLER's audio too, for a complete two-sided audit trail.
+    transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe",
+    // server_vad turn detection (lower latency than semantic_vad). Higher
+    // threshold = less likely to false-trigger on phone echo.
+    vadThreshold: Number(process.env.OPENAI_VAD_THRESHOLD ?? 0.6),
+    vadSilenceMs: Number(process.env.OPENAI_VAD_SILENCE_MS ?? 600),
+    // Only treat caller speech as a real interruption once it's sustained this
+    // long. Long enough to ignore echo/short blips, short enough that Vera
+    // yields quickly instead of talking over you.
+    bargeGateMs: Number(process.env.OPENAI_BARGE_GATE_MS ?? 500),
   },
 };
 
