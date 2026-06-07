@@ -1,3 +1,6 @@
+# Default (lightweight):   docker compose up -d postgres
+# Full stack (3-person integration test):  docker compose --profile full up --build
+#   → postgres + migrate/seed + web (:3000) + channels (:4000), then `npm run smoke`.
 services:
   postgres:
     image: postgres:16
@@ -11,6 +14,54 @@ services:
       - "5432:5432"
     volumes:
       - trustline_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustline"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: apply migrations + seed demo cases, then exit.
+  migrate:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/channels/Dockerfile
+    command: sh -c "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && npx tsx packages/db/prisma/seed.ts"
+    environment:
+      DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  channels:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/channels/Dockerfile
+    ports:
+      - "4000:8080" # host 4000 → container PORT 8080 (smoke harness default)
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgresql://trustline:trustline@postgres:5432/trustline?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CHANNELS_SKIP_SIG: "1" # dry-run: no Twilio creds to validate signatures with
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   trustline_pgdata:

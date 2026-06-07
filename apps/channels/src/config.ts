@@ -6,7 +6,8 @@ loadEnv({ path: resolve(process.cwd(), "../../.env") });
 loadEnv(); // also pick up a local .env if present
 
 export const config = {
-  port: Number(process.env.CHANNELS_PORT ?? 4000),
+  // Cloud Run injects PORT (8080); fall back to CHANNELS_PORT then 4000 locally.
+  port: Number(process.env.PORT ?? process.env.CHANNELS_PORT ?? 4000),
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   // public base URL of THIS service (ngrok in dev) — used for Twilio callbacks
   publicUrl: process.env.CHANNELS_PUBLIC_URL ?? "",

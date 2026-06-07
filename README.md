@@ -55,3 +55,30 @@ GCP). The DB URL already matches `docker-compose.yml`.
 
 - `GET /api/cases` — demo cases
 - `GET /api/metrics` — the before/after success metrics
+
+## Testing
+
+```bash
+npm run smoke            # verify the running system (web + channels [+ agent])
+```
+
+The smoke harness ([scripts/smoke.mjs](scripts/smoke.mjs)) checks every service's
+health + key endpoints and the channels dispatch/OTP flow. It takes base URLs
+from env, so the **same command** verifies localhost or a deployed Cloud Run env:
+
+```bash
+WEB_URL=https://web-xxx.run.app CHANNELS_URL=https://channels-xxx.run.app \
+  READONLY=1 npm run smoke
+```
+
+**Full stack in one command** (Postgres + migrate/seed + web + channels) — the
+shared integration test for all three tracks:
+
+```bash
+docker compose --profile full up --build   # then: npm run smoke
+```
+
+## Deploy
+
+Cloud Run artifacts are ready (`apps/*/Dockerfile`, `scripts/deploy-cloudrun.sh`).
+See [docs/DEPLOY.md](docs/DEPLOY.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

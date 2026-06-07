@@ -20,7 +20,8 @@
     "db:reset": "npm run reset --workspace @trustline/db",
     "bootstrap": "npm install && npm run db:up && npm run db:generate && npm run db:migrate && npm run db:seed",
     "agent:dev": "cd apps/agent && python3 -m vera.main",
-    "channels:dev": "npm run dev --workspace @trustline/channels"
+    "channels:dev": "npm run dev --workspace @trustline/channels",
+    "smoke": "node scripts/smoke.mjs"
   },
   "engines": {
     "node": ">=20"
