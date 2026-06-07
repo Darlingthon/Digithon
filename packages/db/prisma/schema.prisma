@@ -12,6 +12,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────── Organisations ───────────────────────────
+
+enum MemberRole {
+  ADMIN
+  REVIEWER
+}
+
+model Organisation {
+  id          String   @id @default(cuid())
+  workosOrgId String   @unique
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+
+  members        Member[]
+  cases          Case[]
+  questionnaires Questionnaire[]
+}
+
+model Member {
+  id            String       @id @default(cuid())
+  workosUserId  String       @unique
+  email         String
+  orgId         String
+  org           Organisation @relation(fields: [orgId], references: [id])
+  role          MemberRole   @default(REVIEWER)
+  createdAt     DateTime     @default(now())
+}
+
 // ─────────────────────────── Entities ───────────────────────────
 
 enum EntityType {
@@ -71,6 +100,8 @@ model Case {
   id        String     @id @default(cuid())
   entityId  String
   entity    Entity     @relation(fields: [entityId], references: [id])
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id])
   status    CaseStatus @default(CREATED)
   riskTier  RiskTier   @default(LOW)
   reason    CaseReason @default(ONBOARDING)
@@ -213,6 +244,23 @@ model OtpSession {
   verified    Boolean   @default(false)
   expiresAt   DateTime?
   createdAt   DateTime  @default(now())
+}
+
+// ─────────────────────────── Questionnaire Templates (per org) ───────────────────────────
+
+model Questionnaire {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id])
+  name      String
+  riskTier  RiskTier
+  version   Int          @default(1)
+  questions Json
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([orgId, riskTier, version])
 }
 
 // ─────────────────────────── Audit (Track A, consumed by Track C) ───────────────────────────

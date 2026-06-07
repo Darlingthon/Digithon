@@ -6,14 +6,16 @@ import {
   recordAnswers,
   runScreening,
   decide,
+  getOrCreateOrg,
 } from "@trustline/db";
 import { questionsForTier, type RiskTier } from "@trustline/shared/questionnaire";
+import { getSession } from "@/lib/session";
+import { withAuth } from "@workos-inc/authkit-nextjs";
 
 // Autopilot: fill in a name + phone and Vera runs the whole KYC case on her own —
 // the same six Brain actions, in the correct order, deterministically (no LLM
 // ordering slips, no rate limits). Returns the case + final decision.
 
-// Sensible default answers so the questionnaire completes unattended.
 function autoAnswers(tier: RiskTier): Record<string, unknown> {
   const defaults: Record<string, unknown> = {
     occupation: "Software Engineer",
@@ -33,6 +35,13 @@ function autoAnswers(tier: RiskTier): Record<string, unknown> {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session.orgId) return NextResponse.json({ error: "No organisation" }, { status: 403 });
+
+  const auth = await withAuth();
+  const org = await getOrCreateOrg(session.orgId, auth.user?.firstName ?? "My Org");
+
   const body = await req.json().catch(() => ({}));
   const name: string = (body.name ?? "").trim();
   const phone: string | undefined = body.phone?.trim() || undefined;
@@ -42,7 +51,7 @@ export async function POST(req: Request) {
 
   try {
     // 1. create → 2. IDV pass → 3. dispatch → 4. answers → 5. screen → 6. decide
-    const created = await startCase({ entityName: name, phone, email, riskTier: tier });
+    const created = await startCase({ entityName: name, orgId: org.id, phone, email, riskTier: tier });
     const caseId = created.id;
     await markIdvDone(caseId, true, { source: "autopilot", note: "simulated IDV pass" });
     await dispatchQuestionnaire(caseId);

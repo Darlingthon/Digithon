@@ -26,15 +26,16 @@ export class BrainError extends Error {
   }
 }
 
-export async function listCases() {
+export async function listCases(orgId: string) {
   const cases = await prisma.case.findMany({
+    where: { orgId },
     include: { entity: true, decision: true },
     orderBy: { createdAt: "desc" },
   });
   return cases.map(toCaseSummary);
 }
 
-export async function getCase(caseId: string) {
+export async function getCase(caseId: string, orgId?: string) {
   const item = await prisma.case.findUnique({
     where: { id: caseId },
     include: {
@@ -48,6 +49,7 @@ export async function getCase(caseId: string) {
     },
   });
   if (!item) throw new BrainError(`Case not found: ${caseId}`, 404);
+  if (orgId && item.orgId !== orgId) throw new BrainError(`Forbidden`, 403);
   return item;
 }
 
@@ -61,6 +63,7 @@ export async function getAudit(caseId: string) {
 
 export async function startCase(input: {
   entityName: string;
+  orgId: string;
   phone?: string;
   email?: string;
   country?: string;
@@ -70,6 +73,7 @@ export async function startCase(input: {
     data: {
       status: CaseStatus.IDV_PENDING,
       riskTier: input.riskTier ?? RiskTier.LOW,
+      org: { connect: { id: input.orgId } },
       entity: {
         create: {
           fullName: input.entityName,
@@ -341,8 +345,9 @@ export async function decide(caseId: string) {
   return toCaseSummary(updated);
 }
 
-export async function getMetrics() {
+export async function getMetrics(orgId?: string) {
   const cases = await prisma.case.findMany({
+    ...(orgId ? { where: { orgId } } : {}),
     include: {
       responses: true,
       decision: true,
