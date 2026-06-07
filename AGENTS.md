@@ -169,6 +169,7 @@ Skills are specialized instruction sets located in `.agents/skills/` (project) a
 - **Pre-demo polish pass** → load `polish` for a quick alignment/spacing cleanup right before showing UI work.
 - **PRD authoring** → skip in hackathon mode unless explicitly requested.
 - **Playwright** → load `playwright-best-practices` only if you decide an automated test is genuinely faster than manual checking.
+- **Caveman mode / terse communication** → load `caveman` when the user asks for caveman mode, less tokens, or very brief output.
 
 ## assistant-ui Stack
 
