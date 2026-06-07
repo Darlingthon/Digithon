@@ -35,3 +35,6 @@ ngrok.tunnels.yml
 
 # typescript incremental build info
 *.tsbuildinfo
+
+# cloudflared named-tunnel creds + generated config (machine-specific, secret)
+ops/cloudflared/
