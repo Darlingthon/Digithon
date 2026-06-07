@@ -137,6 +137,12 @@ These are product requirements, not nice-to-haves:
 
 # Workflow Orchestration
 
+## 0. Branching
+
+- For every sizeable feature, create a dedicated feature branch before editing.
+- Use short descriptive branch names with the default `joro/` prefix, e.g. `joro/vera-call-orchestration`.
+- Tiny docs fixes and one-line cleanup can stay on the current branch.
+
 ## 1. Move Fast
 
 - Skip plan mode for most work — just build. Only pause to think on genuinely ambiguous architectural forks.
