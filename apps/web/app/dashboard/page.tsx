@@ -7,13 +7,20 @@ import type { CaseSummary, CaseStatus, DecisionOutcome, RiskTierName } from "@tr
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [live, setLive] = useState(true);
 
   useEffect(() => {
-    fetch("/api/cases")
-      .then((r) => r.json())
-      .then((d) => setCases(d.cases ?? []))
-      .finally(() => setLoading(false));
-  }, []);
+    let active = true;
+    const load = () =>
+      fetch("/api/cases")
+        .then((r) => r.json())
+        .then((d) => { if (active) setCases(d.cases ?? []); })
+        .finally(() => { if (active) setLoading(false); });
+    load();
+    if (!live) return () => { active = false; };
+    const t = setInterval(load, 2500); // live auto-refresh for the demo
+    return () => { active = false; clearInterval(t); };
+  }, [live]);
 
   const needsReview = cases.filter((c) => c.status === "NEEDS_REVIEW").length;
 
@@ -37,6 +44,19 @@ export default function DashboardPage() {
           <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>Cases</span>
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <button
+            onClick={() => setLive((v) => !v)}
+            title={live ? "Live — click to pause" : "Paused — click to resume"}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+              background: "transparent", border: "1px solid var(--border)", borderRadius: 20,
+              padding: "4px 10px", fontSize: 12, fontWeight: 600, color: live ? "var(--success)" : "var(--muted)",
+            }}
+          >
+            <style>{`@keyframes tl-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.25 } }`}</style>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: live ? "var(--success)" : "var(--muted)", animation: live ? "tl-pulse 1.4s ease-in-out infinite" : "none" }} />
+            {live ? "Live" : "Paused"}
+          </button>
           {needsReview > 0 && (
             <Link href="/dashboard/review" style={{
               fontSize: 12, fontWeight: 700,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCase } from "@trustline/db";
+import AutoRefresh from "./auto-refresh";
 import type {
   CaseDetail,
   CaseStatus,
@@ -106,6 +107,9 @@ export default async function CaseDetailPage({ params }: { params: Promise<{ id:
         <Link href="/dashboard" style={{ fontSize: 13, color: "var(--muted)" }}>Cases</Link>
         <span style={{ color: "var(--border)", fontSize: 14 }}>›</span>
         <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{c.entityName}</span>
+        <div style={{ marginLeft: "auto" }}>
+          <AutoRefresh active={c.status !== "DECIDED"} />
+        </div>
       </div>
 
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "36px 32px" }}>
