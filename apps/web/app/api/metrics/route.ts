@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { MOCK_METRICS } from "@trustline/shared/fixtures";
+import { getMetrics } from "@trustline/db";
 
-// Mock metrics endpoint feeding the dashboard. Track A replaces with computed
-// metrics over real cases (time-to-decision, STP rate, etc.).
 export async function GET() {
-  return NextResponse.json(MOCK_METRICS);
+  try {
+    return NextResponse.json(await getMetrics());
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
+  }
 }

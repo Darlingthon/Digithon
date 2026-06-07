@@ -8,7 +8,9 @@
     "apps/web"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace apps/web",
+    "dev": "dotenv -e .env -- npm run dev --workspace apps/web",
+    "build": "dotenv -e .env -- npm run build --workspace apps/web",
+    "start": "dotenv -e .env -- npm run start --workspace apps/web",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:generate": "npm run generate --workspace @trustline/db",
