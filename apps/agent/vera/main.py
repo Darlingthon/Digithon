@@ -1,17 +1,15 @@
-"""Vera agent skeleton.
-
-This is a starting point for Track A. It defines the case-action tools Vera
-uses to drive a case through the state machine. The tools are currently
-in-memory stubs — wire them to Postgres (via the @trustline/db schema) and the
-real Sumsub/decision logic in issues #2 and #3.
-
-Runs without google-adk installed (prints guidance) so the scaffold is
-verifiable on Python 3.9; install ADK on 3.10+ to run the real agent.
-"""
+"""Vera ADK agent and Brain Track tools."""
 
 from __future__ import annotations
 
 from .state_machine import CaseStatus, assert_transition
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv("../../.env")
+except ModuleNotFoundError:
+    pass
 
 VERA_INSTRUCTION = """
 You are Vera, an AI KYC officer for TrustLine. You own a verification case from
@@ -30,9 +28,15 @@ Hard trust & safety rules (never violate):
 """.strip()
 
 
-# ─────────────────── Case-action tools (stubs) ───────────────────
-# Mirror of the CaseActions TS contract in @trustline/shared. Replace the bodies
-# with real DB writes + integration calls.
+# ─────────────────── Case-action tools ───────────────────
+# Mirror of the CaseActions TS contract in @trustline/shared. These tools write
+# to Postgres and append audit events so ADK, Channels, and Frontend share state.
+
+def start_case(entity_name: str, phone: str | None = None, email: str | None = None) -> dict:
+    """Create a new KYC case and move it to IDV_PENDING."""
+    from . import repository
+
+    return repository.start_case(entity_name, phone=phone, email=email)
 
 def advance_case(case_id: str, current: str, target: str) -> dict:
     """Advance a case to a new state, enforcing the legal transition."""
@@ -42,28 +46,38 @@ def advance_case(case_id: str, current: str, target: str) -> dict:
 
 def mark_idv_done(case_id: str, passed: bool) -> dict:
     """Record IDV result (Track C / Sumsub) and advance the case."""
-    target = CaseStatus.IDV_DONE if passed else CaseStatus.NEEDS_REVIEW
-    return {"caseId": case_id, "status": target.value, "idvPassed": passed}
+    from . import repository
+
+    return repository.mark_idv_done(case_id, passed)
 
 
 def dispatch_questionnaire(case_id: str) -> dict:
     """Trigger SMS/OTP + link dispatch (Track B) and advance the case."""
-    return {"caseId": case_id, "status": CaseStatus.QUESTIONNAIRE_SENT.value}
+    from . import repository
+
+    return repository.dispatch_questionnaire(case_id)
 
 
 def record_answers(case_id: str, channel: str, answers: dict) -> dict:
     """Persist normalized questionnaire answers from web or voice."""
-    return {"caseId": case_id, "status": CaseStatus.QUESTIONNAIRE_DONE.value, "channel": channel}
+    from . import repository
+
+    normalized_channel = "VOICE" if channel.upper() == "VOICE" else "WEB"
+    return repository.record_answers(case_id, normalized_channel, answers)
 
 
 def run_screening(case_id: str) -> dict:
     """Run AML screening (sanctions / PEP / adverse media) — issue #3."""
-    return {"caseId": case_id, "status": CaseStatus.SCREENING.value}
+    from . import repository
+
+    return repository.run_screening(case_id)
 
 
 def decide(case_id: str) -> dict:
     """Reach an explainable decision: CLEAR | REFER | REJECT — issue #3."""
-    return {"caseId": case_id, "status": CaseStatus.DECIDED.value, "outcome": "CLEAR"}
+    from . import repository
+
+    return repository.decide(case_id)
 
 
 def build_agent():
@@ -75,6 +89,7 @@ def build_agent():
         model="gemini-2.0-flash",
         instruction=VERA_INSTRUCTION,
         tools=[
+            start_case,
             mark_idv_done,
             dispatch_questionnaire,
             record_answers,
@@ -91,7 +106,7 @@ def main() -> None:
         print("Run with the ADK CLI: `adk run vera` (see apps/agent/README.md)")
     except ModuleNotFoundError:
         print("⚠️  google-adk not installed (needs Python >=3.10).")
-        print("    State machine + tool stubs are ready. To run the real agent:")
+        print("    State machine + DB-backed tools are ready. To run the real agent:")
         print("      cd apps/agent && python3.11 -m venv .venv && source .venv/bin/activate")
         print("      pip install -e . && adk run vera")
         # Prove the stubs + state machine work even without ADK.

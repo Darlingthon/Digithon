@@ -1,8 +1,33 @@
 import { NextResponse } from "next/server";
-import { MOCK_CASES } from "@trustline/shared/fixtures";
+import { BrainError, listCases, startCase } from "@trustline/db";
 
-// Mock cases endpoint. Track A swaps the body for a real Prisma query
-// (prisma.case.findMany) once the DB-backed actions land.
 export async function GET() {
-  return NextResponse.json({ cases: MOCK_CASES });
+  try {
+    return NextResponse.json({ cases: await listCases() });
+  } catch (error) {
+    return toError(error);
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const kase = await startCase({
+      entityName: body.entityName,
+      phone: body.phone,
+      email: body.email,
+      country: body.country,
+      riskTier: body.riskTier,
+    });
+    return NextResponse.json({ case: kase }, { status: 201 });
+  } catch (error) {
+    return toError(error);
+  }
+}
+
+function toError(error: unknown) {
+  if (error instanceof BrainError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+  return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
 }

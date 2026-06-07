@@ -39,3 +39,5 @@ export function assertTransition(from: CaseStatus, to: CaseStatus): void {
     throw new Error(`Illegal case transition: ${from} -> ${to}`);
   }
 }
+
+export * from "./brain";
