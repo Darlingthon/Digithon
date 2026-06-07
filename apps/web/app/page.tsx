@@ -21,51 +21,152 @@ export default async function Home() {
   }
 
   return (
-    <main className="container">
-      <p className="muted" style={{ letterSpacing: 2, fontSize: 12 }}>TRUSTLINE · VERA</p>
-      <h1 style={{ fontSize: 40, margin: "8px 0 4px" }}>An AI employee that runs KYC end-to-end.</h1>
-      <p className="muted" style={{ maxWidth: 560 }}>
-        Vera handles identity verification, questionnaires, AML screening, and decisioning
-        — automatically, end-to-end.
-      </p>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, margin: "28px 0" }}>
-        <Stat label="Avg time to decision" value={`${m.avgTimeToDecisionMins} min`} sub={`vs ${m.manualBaselineDays} days manual`} />
-        <Stat label="Straight-through rate" value={`${Math.round(m.straightThroughRate * 100)}%`} sub="no human touch" />
-        <Stat label="Cost / verification" value={`$${m.costPerVerificationUsd.toFixed(2)}`} sub={`vs $${m.manualCostBenchmarkUsd[0]}–${m.manualCostBenchmarkUsd[1]}`} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-        <Track color="var(--brain)" name="A · Brain" what="Agent core, decisioning, audit" />
-        <Track color="var(--channels)" name="B · Channels" what="Twilio SMS/OTP + Vera voice" />
-        <Track color="var(--frontend)" name="C · Frontend" what="IDV, questionnaire, dashboard" />
-      </div>
-
-      <div style={{ marginTop: 28, display: "flex", gap: 16, alignItems: "center" }}>
-        <Link href="/dashboard" style={{ background: "#1d76db", color: "#fff", padding: "10px 20px", borderRadius: 8, textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
-          Open Reviewer Dashboard →
+    <main style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      {/* Nav strip */}
+      <nav style={{
+        borderBottom: "1px solid var(--border)",
+        background: "var(--panel)",
+        padding: "0 32px",
+        height: 56,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", color: "var(--brand)" }}>
+          TRUSTLINE
+        </span>
+        <Link
+          href="/dashboard"
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--panel)",
+            background: "var(--brand)",
+            padding: "6px 16px",
+            borderRadius: 6,
+            display: "inline-block",
+          }}
+        >
+          Open Dashboard
         </Link>
-        <span className="muted" style={{ fontSize: 13 }}>{m.totalCases} case{m.totalCases !== 1 ? "s" : ""} in system</span>
+      </nav>
+
+      {/* Hero */}
+      <div style={{ maxWidth: 880, margin: "0 auto", padding: "72px 32px 56px" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--brand)", marginBottom: 16 }}>
+          Vera · KYC Automation
+        </p>
+        <h1 style={{ fontSize: "clamp(2.4rem, 5vw, 3.6rem)", fontWeight: 700, lineHeight: 1.1, color: "var(--text)", maxWidth: 640, marginBottom: 20 }}>
+          An AI employee that runs KYC end-to-end.
+        </h1>
+        <p style={{ fontSize: "1.0625rem", color: "var(--text-secondary)", maxWidth: 520, lineHeight: 1.7, marginBottom: 40 }}>
+          Vera handles identity verification, compliance questionnaires, AML screening, and decisioning — automatically, with a full audit trail.
+        </p>
+
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <Link
+            href="/dashboard"
+            style={{
+              background: "var(--brand)",
+              color: "#fff",
+              padding: "11px 24px",
+              borderRadius: 7,
+              fontWeight: 600,
+              fontSize: 14,
+              display: "inline-block",
+            }}
+          >
+            Reviewer Dashboard →
+          </Link>
+          <span style={{ fontSize: 13, color: "var(--muted)" }}>
+            {m.totalCases} case{m.totalCases !== 1 ? "s" : ""} processed
+          </span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 32px" }}>
+        <hr />
+      </div>
+
+      {/* KPI strip */}
+      <div style={{ maxWidth: 880, margin: "0 auto", padding: "48px 32px" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 24 }}>
+          Live performance
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 1, background: "var(--border)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+          <KpiCell
+            label="Avg. time to decision"
+            value={m.avgTimeToDecisionMins === 0 ? "—" : `${m.avgTimeToDecisionMins} min`}
+            vs={`vs ${m.manualBaselineDays} days manual`}
+          />
+          <KpiCell
+            label="Straight-through rate"
+            value={`${Math.round(m.straightThroughRate * 100)}%`}
+            vs="no human touch"
+          />
+          <KpiCell
+            label="Cost per verification"
+            value={`$${m.costPerVerificationUsd.toFixed(2)}`}
+            vs={`vs $${m.manualCostBenchmarkUsd[0]}–${m.manualCostBenchmarkUsd[1]} manual`}
+          />
+        </div>
+      </div>
+
+      {/* Track overview */}
+      <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 32px 72px" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 24 }}>
+          System components
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          <TrackCard
+            color="var(--brain)"
+            letter="A"
+            name="Brain"
+            what="Agent orchestration, decisioning, and full audit trail."
+          />
+          <TrackCard
+            color="var(--channels)"
+            letter="B"
+            name="Channels"
+            what="Twilio SMS/OTP delivery and Vera outbound voice calls."
+          />
+          <TrackCard
+            color="var(--frontend)"
+            letter="C"
+            name="Frontend"
+            what="IDV flow, questionnaire, and reviewer dashboard."
+          />
+        </div>
       </div>
     </main>
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+function KpiCell({ label, value, vs }: { label: string; value: string; vs: string }) {
   return (
-    <div className="card">
-      <div className="muted" style={{ fontSize: 12 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{value}</div>
-      <div className="muted" style={{ fontSize: 12 }}>{sub}</div>
+    <div style={{ background: "var(--panel)", padding: "24px 28px" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: "1.875rem", fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-playfair), serif", letterSpacing: "-0.02em" }}>{value}</div>
+      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{vs}</div>
     </div>
   );
 }
 
-function Track({ color, name, what }: { color: string; name: string; what: string }) {
+function TrackCard({ color, letter, name, what }: { color: string; letter: string; name: string; what: string }) {
   return (
-    <div className="card" style={{ borderTop: `3px solid ${color}` }}>
-      <div style={{ fontWeight: 700 }}>{name}</div>
-      <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{what}</div>
+    <div style={{
+      background: "var(--panel)",
+      border: "1px solid var(--border)",
+      borderTop: `3px solid ${color}`,
+      borderRadius: 8,
+      padding: "20px 22px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: "0.05em" }}>{letter}</span>
+        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>{name}</span>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>{what}</p>
     </div>
   );
 }

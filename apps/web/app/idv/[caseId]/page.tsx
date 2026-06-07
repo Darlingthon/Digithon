@@ -19,7 +19,6 @@ export default function IdvPage() {
     let sdk: { destroy?: () => void; launch?: (el: HTMLElement) => void } | null = null;
 
     const init = async () => {
-      // Get applicant token from our backend
       const res = await fetch("/api/sumsub", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -28,13 +27,8 @@ export default function IdvPage() {
       if (!res.ok) { setState("error"); setErrorMsg("Could not initialise identity verification."); return; }
       const { token, isMock } = await res.json();
 
-      if (isMock) {
-        // Sumsub keys not configured — show demo mode
-        setState("mock");
-        return;
-      }
+      if (isMock) { setState("mock"); return; }
 
-      // Load Sumsub Web SDK dynamically (avoids SSR issues)
       if (!(window as any).snsWebSdk) {
         await loadScript("https://static.sumsub.com/idensic/static/sns-websdk-builder.js");
       }
@@ -42,7 +36,6 @@ export default function IdvPage() {
       const snsWebSdk = (window as any).snsWebSdk;
       sdk = snsWebSdk
         .init(token, () =>
-          // Token refresh callback
           fetch("/api/sumsub", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -52,9 +45,7 @@ export default function IdvPage() {
             .then((d) => d.token)
         )
         .withConf({ lang: "en" })
-        .on("idCheck.onStepCompleted", () => {
-          setState("processing");
-        })
+        .on("idCheck.onStepCompleted", () => setState("processing"))
         .on("idCheck.onApplicantStatusChanged", async (payload: any) => {
           const reviewResult = payload?.reviewResult?.reviewAnswer;
           if (reviewResult === "GREEN") {
@@ -82,7 +73,6 @@ export default function IdvPage() {
     return () => { sdk?.destroy?.(); };
   }, [caseId, router]);
 
-  // Demo mode: simulate IDV pass/fail without real Sumsub
   const simulateResult = async (passed: boolean) => {
     setState("processing");
     await markIdv(caseId!, passed, { demo: true });
@@ -91,74 +81,106 @@ export default function IdvPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-      <div style={{ width: "100%", maxWidth: 640, padding: "0 24px" }}>
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>TRUSTLINE · VERA</p>
-          <h1 style={{ margin: "4px 0 0", fontSize: 22, fontWeight: 700 }}>Identity Verification</h1>
-          <p style={{ color: "var(--muted)", fontSize: 14, margin: "6px 0 0" }}>
-            We need to verify your identity before proceeding. This takes about 2 minutes.
-          </p>
-        </div>
+    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 32px", borderBottom: "1px solid var(--border)", background: "var(--panel)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", color: "var(--brand)" }}>TRUSTLINE</span>
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>Identity Verification</span>
+      </div>
 
-        {state === "loading" && (
-          <div className="card" style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
-            Initialising verification…
-          </div>
-        )}
-
-        {state === "mock" && (
-          <div className="card" style={{ padding: 36, textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🧪</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>Demo Mode</h2>
-            <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 24px" }}>
-              Sumsub keys not configured. Simulate an IDV outcome for the demo.
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+        <div style={{ width: "100%", maxWidth: 600 }}>
+          {/* Page title */}
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h1 style={{ fontSize: "1.6rem", marginBottom: 8 }}>Identity Verification</h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, margin: 0, lineHeight: 1.6 }}>
+              We need to verify your identity before proceeding. This takes about 2 minutes.
             </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button onClick={() => simulateResult(true)} style={btnStyle("#0e8a16")}>✓ Simulate Pass</button>
-              <button onClick={() => simulateResult(false)} style={btnStyle("#d93f0b")}>✗ Simulate Fail</button>
+          </div>
+
+          {state === "loading" && (
+            <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "48px", textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
+              Initialising verification…
             </div>
-          </div>
-        )}
+          )}
 
-        {state === "processing" && (
-          <div className="card" style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-            <p style={{ margin: 0, fontWeight: 600 }}>Processing your verification…</p>
-          </div>
-        )}
+          {state === "mock" && (
+            <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "40px 32px", textAlign: "center" }}>
+              <div style={{ display: "inline-block", background: "var(--warning-bg)", border: "1px solid var(--warning-border)", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "var(--warning)", letterSpacing: "0.07em", marginBottom: 20 }}>
+                DEMO MODE
+              </div>
+              <h2 style={{ fontSize: "1.2rem", marginBottom: 10 }}>Sumsub not configured</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, margin: "0 0 28px", lineHeight: 1.6 }}>
+                No Sumsub keys are set. Simulate an IDV outcome to continue the demo flow.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button onClick={() => simulateResult(true)} style={actionBtn("var(--success)", "var(--success-bg)", "var(--success-border)")}>
+                  ✓ Simulate Pass
+                </button>
+                <button onClick={() => simulateResult(false)} style={actionBtn("var(--error)", "var(--error-bg)", "var(--error-border)")}>
+                  ✗ Simulate Fail
+                </button>
+              </div>
+            </div>
+          )}
 
-        {state === "success" && (
-          <div className="card" style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: "#0e8a16" }}>Verification passed</h2>
-            <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>Redirecting you to the next step…</p>
-          </div>
-        )}
+          {state === "processing" && (
+            <StatusCard
+              bg="var(--info-bg)" border="var(--info-border)"
+              title="Processing…"
+              body="Analysing your verification. Please wait."
+            />
+          )}
 
-        {state === "failed" && (
-          <div className="card" style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>❌</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: "#d93f0b" }}>Verification failed</h2>
-            <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
-              We were unable to verify your identity. Please contact support.
-            </p>
-          </div>
-        )}
+          {state === "success" && (
+            <StatusCard
+              bg="var(--success-bg)" border="var(--success-border)" titleColor="var(--success)"
+              title="Verification passed"
+              body="Redirecting you to the next step…"
+            />
+          )}
 
-        {state === "error" && (
-          <div className="card" style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-            <p style={{ color: "#d93f0b", fontWeight: 600, margin: 0 }}>{errorMsg ?? "An error occurred."}</p>
-          </div>
-        )}
+          {state === "failed" && (
+            <StatusCard
+              bg="var(--error-bg)" border="var(--error-border)" titleColor="var(--error)"
+              title="Verification failed"
+              body="We were unable to verify your identity. Please contact support."
+            />
+          )}
 
-        {/* Sumsub SDK mounts here when keys are present */}
-        <div ref={containerRef} style={{ display: state === "ready" ? "block" : "none" }} />
+          {state === "error" && (
+            <StatusCard
+              bg="var(--error-bg)" border="var(--error-border)" titleColor="var(--error)"
+              title="Something went wrong"
+              body={errorMsg ?? "An error occurred."}
+            />
+          )}
+
+          <div ref={containerRef} style={{ display: state === "ready" ? "block" : "none" }} />
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 32px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "center" }}>
+        <span style={{ fontSize: 11, color: "var(--subtle)", letterSpacing: "0.04em" }}>TrustLine · Vera — secure identity verification</span>
       </div>
     </main>
   );
+}
+
+function StatusCard({ bg, border, title, body, titleColor }: { bg: string; border: string; title: string; body: string; titleColor?: string }) {
+  return (
+    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: "36px 32px", textAlign: "center" }}>
+      <h2 style={{ fontSize: "1.1rem", marginBottom: 8, color: titleColor ?? "var(--text)" }}>{title}</h2>
+      <p style={{ color: "var(--text-secondary)", fontSize: 14, margin: 0 }}>{body}</p>
+    </div>
+  );
+}
+
+function actionBtn(color: string, bg: string, border: string): React.CSSProperties {
+  return {
+    padding: "11px 24px", borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: "pointer",
+    background: bg, color, border: `1.5px solid ${border}`,
+  };
 }
 
 async function markIdv(caseId: string, passed: boolean, rawResult: unknown) {
@@ -177,11 +199,4 @@ function loadScript(src: string): Promise<void> {
     s.onerror = reject;
     document.head.appendChild(s);
   });
-}
-
-function btnStyle(color: string): React.CSSProperties {
-  return {
-    padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700,
-    background: color + "22", color, border: `2px solid ${color}44`, cursor: "pointer",
-  };
 }

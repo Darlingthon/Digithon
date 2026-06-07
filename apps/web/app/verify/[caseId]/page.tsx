@@ -59,65 +59,85 @@ export default function VerifyPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-      <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
-        <div className="card" style={{ padding: 36, textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 8px" }}>Enter your code</h1>
-          <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 28px" }}>
-            We sent a 6-digit code to your phone. Enter it below to access your questionnaire.
-          </p>
+    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+      {/* Minimal header */}
+      <div style={{ padding: "20px 32px", borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.07em", color: "var(--brand)" }}>TRUSTLINE</span>
+      </div>
 
-          {success ? (
-            <div style={{ color: "#0e8a16", fontWeight: 700, fontSize: 16 }}>✓ Verified! Redirecting…</div>
-          ) : (
-            <>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 20 }} onPaste={handlePaste}>
-                {otp.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { inputs.current[i] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleInput(i, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(i, e)}
-                    style={{
-                      width: 44, height: 52, textAlign: "center", fontSize: 22, fontWeight: 700,
-                      background: "var(--bg)", border: `2px solid ${error ? "#d93f0b" : digit ? "#1d76db" : "var(--border)"}`,
-                      borderRadius: 8, color: "var(--text)", outline: "none",
-                    }}
-                  />
-                ))}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <div style={{ marginBottom: 32, textAlign: "center" }}>
+            <h1 style={{ fontSize: "1.6rem", marginBottom: 10 }}>Confirm your identity</h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+              We sent a 6-digit code to your registered phone number. Enter it below to access your questionnaire.
+            </p>
+          </div>
+
+          <div style={{ background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "32px 28px" }}>
+            {success ? (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--success-bg)", border: "1px solid var(--success-border)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 20 }}>✓</div>
+                <p style={{ fontWeight: 700, color: "var(--success)", margin: 0 }}>Verified. Redirecting…</p>
               </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }} onPaste={handlePaste}>
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { inputs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleInput(i, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(i, e)}
+                      style={{
+                        width: 44, height: 52,
+                        textAlign: "center", fontSize: 22, fontWeight: 700,
+                        background: "var(--panel-raised)",
+                        border: `1.5px solid ${error ? "var(--error-border)" : digit ? "var(--brand)" : "var(--border)"}`,
+                        borderRadius: 6, color: "var(--text)", outline: "none",
+                        transition: "border-color 0.15s",
+                        fontFamily: "var(--font-playfair), serif",
+                      }}
+                    />
+                  ))}
+                </div>
 
-              {error && (
-                <div style={{ color: "#d93f0b", fontSize: 13, marginBottom: 16 }}>{error}</div>
-              )}
+                {error && (
+                  <div style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 6, padding: "9px 12px", fontSize: 13, color: "var(--error)", marginBottom: 16 }}>
+                    {error}
+                  </div>
+                )}
 
-              <button
-                onClick={submit}
-                disabled={loading || otp.join("").length < 6}
-                style={{
-                  width: "100%", padding: "12px 0", background: "#1d76db", color: "#fff",
-                  border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700,
-                  cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1,
-                }}
-              >
-                {loading ? "Verifying…" : "Continue"}
-              </button>
+                <button
+                  onClick={submit}
+                  disabled={loading || otp.join("").length < 6}
+                  style={{
+                    width: "100%", padding: "12px 0",
+                    background: loading || otp.join("").length < 6 ? "var(--border)" : "var(--brand)",
+                    color: loading || otp.join("").length < 6 ? "var(--muted)" : "#fff",
+                    border: "none", borderRadius: 7, fontSize: 14, fontWeight: 600,
+                    cursor: loading || otp.join("").length < 6 ? "not-allowed" : "pointer",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  {loading ? "Verifying…" : "Continue"}
+                </button>
+              </>
+            )}
+          </div>
 
-              <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 16 }}>
-                Demo: use code <code style={{ color: "var(--text)" }}>000000</code>
-              </p>
-            </>
-          )}
+          <p style={{ textAlign: "center", color: "var(--subtle)", fontSize: 12, marginTop: 20 }}>
+            Demo: use code <code style={{ color: "var(--muted)", background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 5px" }}>000000</code>
+          </p>
         </div>
+      </div>
 
-        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, marginTop: 16 }}>
-          TrustLine · Vera — secure identity verification
-        </p>
+      <div style={{ padding: "16px 32px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "center" }}>
+        <span style={{ fontSize: 11, color: "var(--subtle)", letterSpacing: "0.04em" }}>TrustLine · Vera — secure identity verification</span>
       </div>
     </main>
   );
