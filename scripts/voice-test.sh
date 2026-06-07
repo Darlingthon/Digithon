@@ -30,7 +30,8 @@ ngrok http 4000 --log stdout > /tmp/ngrok.log 2>&1 &
 NGROK_PID=$!
 PUBLIC=""
 for _ in $(seq 1 20); do
-  PUBLIC="$(curl -s http://127.0.0.1:4040/api/tunnels | sed -n 's/.*"public_url":"\(https:[^"]*\)".*/\1/p' | head -1)"
+  # || true: ngrok's API isn't up on the first polls; don't let pipefail abort.
+  PUBLIC="$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | sed -n 's/.*"public_url":"\(https:[^"]*\)".*/\1/p' | head -1 || true)"
   [ -n "$PUBLIC" ] && break; sleep 1
 done
 [ -n "$PUBLIC" ] || { echo "❌ couldn't get ngrok URL (is the authtoken set?)"; exit 1; }

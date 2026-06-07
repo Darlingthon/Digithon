@@ -13,12 +13,9 @@ export function voiceTwiml(req: Request, res: Response) {
   const phone = (req.query.phone ?? req.body?.From ?? "") as string;
   const twiml = new twilio.twiml.VoiceResponse();
 
-  // Disclosure first — recording + who we are (authenticate the call).
-  twiml.say(
-    "Hello, this is Vera from TrustLine, calling on a recorded line about the verification we texted you. " +
-      "I will only ask the questions from that text, and I will never ask for full card or I.D. numbers."
-  );
-
+  // No TwiML <Say> — that uses Twilio's robotic TTS. Vera (OpenAI) speaks the
+  // recording disclosure herself as her opening line (see buildInstructions),
+  // so the whole call is her natural voice.
   if (!hasOpenAI || !config.publicUrl) {
     twiml.say(
       "Our voice assistant is not available right now. Please use the secure link we texted you. Goodbye."

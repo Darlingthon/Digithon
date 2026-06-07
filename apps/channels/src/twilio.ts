@@ -52,6 +52,15 @@ export async function startCall(to: string, twimlUrl: string): Promise<{ sid: st
   return { sid: call.sid };
 }
 
+/** Hang up an in-progress call (used to auto-end after the questionnaire). */
+export async function hangUp(callSid: string): Promise<void> {
+  if (!hasTwilio || !callSid) {
+    console.log(`📴 [dry-run] hang up ${callSid}`);
+    return;
+  }
+  await getClient().calls(callSid).update({ status: "completed" });
+}
+
 /** Check a Verify OTP code. Dry-run accepts "123456". */
 export async function checkOtp(to: string, code: string): Promise<boolean> {
   if (!hasTwilio || !config.twilio.verifyServiceSid) {
