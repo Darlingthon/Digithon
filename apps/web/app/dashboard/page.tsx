@@ -12,7 +12,10 @@ export default function DashboardPage() {
           <p style={{ margin: 0, color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>TRUSTLINE · VERA</p>
           <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 700 }}>Reviewer Dashboard</h1>
         </div>
-        <Link href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>← Home</Link>
+        <div style={{ display: "flex", gap: 16 }}>
+          <Link href="/dashboard/metrics" style={{ color: "var(--brain)", fontSize: 13, textDecoration: "none", fontWeight: 600 }}>Live Metrics →</Link>
+          <Link href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>← Home</Link>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
