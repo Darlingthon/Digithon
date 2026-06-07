@@ -49,6 +49,7 @@ export default function DashboardPage() {
               {needsReview} need{needsReview === 1 ? "s" : ""} review
             </Link>
           )}
+          <Link href="/new" style={{ background: "var(--brand)", color: "#fff", padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 700 }}>+ New case</Link>
           <Link href="/dashboard/metrics" style={{ fontSize: 13, color: "var(--muted)" }}>
             Metrics →
           </Link>

@@ -23,6 +23,8 @@ __pycache__/
 .venv/
 venv/
 .python-version
+*.egg-info/
+.adk/
 
 # misc
 .DS_Store
