@@ -170,6 +170,20 @@ Skills are specialized instruction sets located in `.agents/skills/` (project) a
 - **PRD authoring** → skip in hackathon mode unless explicitly requested.
 - **Playwright** → load `playwright-best-practices` only if you decide an automated test is genuinely faster than manual checking.
 
+## assistant-ui Stack
+
+Load these when working in code that uses the `assistant-ui` library (chat UI, runtimes, tools, streaming):
+
+- `assistant-ui` — architecture overview; load first when orienting in this code.
+- `setup` — installing/configuring assistant-ui, scaffolding apps, troubleshooting init.
+- `primitives` — customising `ThreadPrimitive`, `ComposerPrimitive`, `MessagePrimitive`, `ActionBarPrimitive`.
+- `runtime` — `useLocalRuntime`, `useExternalStoreRuntime`, state hooks, thread/message data.
+- `thread-list` — multi-thread management and custom thread-list UIs.
+- `tools` — registering LLM tools, rendering tool UI, human-in-the-loop confirmations.
+- `streaming` — `assistant-stream`, data-stream / assistant-transport protocols, encoders.
+- `cloud` — assistant-cloud persistence, file uploads, auth.
+- `update` — upgrading assistant-ui or AI SDK; detects versions and runs migrations. Use before any version bump.
+
 ## Discovery
 
 - `find-skills` (user-level) — load when the user asks "is there a skill for X" or wants to extend capabilities.
